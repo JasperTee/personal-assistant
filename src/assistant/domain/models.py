@@ -36,9 +36,9 @@ class ToolCall(BaseModel):
 
     model_config = ConfigDict(frozen=True)  # cannot be changed after creation
 
-    id: str
-    name: str
-    arguments: dict
+    id: str  # given by the LLM; ToolResult.tool_call_id points back to it
+    name: str  # tool name, e.g. "reminders.create"
+    arguments: dict  # tool parameters, e.g. {"content": "gym", "remind_at": "..."}
 
 
 class ToolResult(BaseModel):
@@ -105,3 +105,14 @@ class AgentContext(BaseModel):
     system_prompt: str  # the system prompt that defines the agent's behavior
     history: tuple[ChatMessage, ...] = ()  # the chat history leading up to this message
     tool_names: tuple[str, ...] = ()  # which tools are available to the agent
+
+
+class LLMResponse(BaseModel):
+    """What the LLM returned for one call."""
+
+    model_config = ConfigDict(frozen=True)  # cannot be changed after creation
+
+    text: str = ""  # reply text; empty when the LLM only calls tools
+    tool_calls: tuple[ToolCall, ...] = ()  # which tools the LLM wants to call
+    input_tokens: int  # how many tokens were used for the inputs
+    output_tokens: int  # how many tokens were used for the outputs
