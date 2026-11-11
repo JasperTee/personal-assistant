@@ -11,6 +11,9 @@ budget:
   monthly_limit_usd: 15      # when exceeded, stop calling the LLM and notify the owner
   warn_at_percent: 80
 
+preprocessing:
+  is_enabled: true           # LLM normalisation before routing (ADR-17); compare on/off with evals
+
 models:
   router: cheap              # logical names; mapped to real models in LLMProvider
   default: standard

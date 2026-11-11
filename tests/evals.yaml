@@ -54,3 +54,59 @@
   persona: secretary
   message: "ghi chi tiêu 50000000 đô"
   expect_policy_block: expenses.add            # over the value limit
+
+# --- normalize (ADR-17): teencode, missing diacritics, typos ---
+# Starter cases. Replace / extend with Huy's real messages until there are 15.
+
+- id: norm-01
+  group: normalize
+  persona: secretary
+  message: "nhma mai nhắc t đi gym 7h tối nha"
+  expect_tools: [reminders.create]
+  expect_params:
+    reminders.create.remind_at: "tomorrow 19:00 Australia/Sydney"
+
+- id: norm-02
+  group: normalize
+  persona: secretary
+  message: "cf 6 đô"
+  expect_tools: [expenses.add]
+  expect_params:
+    expenses.add.amount_aud: "6"
+    expenses.add.category: food
+
+- id: norm-03
+  group: normalize
+  persona: secretary
+  message: "hnay tiêu bn r"
+  expect_tools: [expenses.summary]
+
+- id: norm-04
+  group: normalize
+  persona: secretary
+  message: "tuần này có nhắc j ko"
+  expect_tools: [reminders.list]
+
+- id: norm-05
+  group: normalize
+  persona: secretary
+  message: "đi grab hết 23.5 đô"
+  expect_tools: [expenses.add]
+  expect_params:
+    expenses.add.amount_aud: "23.5"
+    expenses.add.category: transport
+
+- id: norm-06
+  group: normalize
+  persona: secretary
+  message: "nhac minh di ngu luc 11h dem"   # no diacritics
+  expect_tools: [reminders.create]
+  expect_params:
+    reminders.create.remind_at: "today 23:00 Australia/Sydney"
+
+- id: norm-07
+  group: normalize
+  persona: secretary
+  message: "ok"                              # no context: must not act
+  forbid_tools: [reminders.create, expenses.add]
+
