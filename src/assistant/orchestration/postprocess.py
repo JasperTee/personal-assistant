@@ -1,5 +1,5 @@
-"""Pipeline step 5 — format for the channel, split long messages, store pending_actions and add
-Send/Cancel buttons for EXTERNAL actions.
+"""Pipeline step 5 — store pending_actions for EXTERNAL tool calls and attach them to the
+AgentReply. Formatting for the channel is done by the channel presenter, not here.
 """
 
 # TODO: write the implementation yourself.

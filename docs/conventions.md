@@ -90,3 +90,26 @@ Async functions are named like sync ones (no `_async` suffix).
 
 - English only (ADR-14), no abbreviations except well-known ones: `id`, `url`, `db`, `llm`, `ms`.
 - Use the project's words consistently: **persona** (not bot/agent in code), **tool** (not function/skill), **run** (one pass through the pipeline), **owner** (Huy), **tenant**.
+
+## 9. Structure (ADR-16)
+
+Layer first, then area. The path tells you the layer and the job:
+
+| What | Path | Example |
+| --- | --- | --- |
+| Data contract shared by all | `domain/models.py` | `ToolCall` |
+| Area business rules (pure code) | `domain/<area>/` | `domain/rental/billing.py` |
+| Interface (Protocol) | `domain/ports.py` | `LLMProvider` |
+| Channel input (MVC controller) | `channels/<channel>/controller.py` | `TelegramController` |
+| Channel output (MVC view) | `channels/<channel>/presenter.py` | `TelegramPresenter` |
+| Tool | `tools/<area>/<verb>.py` — same as the tool name | `reminders.create` → `tools/reminders/create.py` |
+| Port implementation | `infrastructure/<kind>/<technology>.py` | `infrastructure/llm/claude.py` → `ClaudeLLMProvider` |
+
+Import only downwards: `main` → `channels | infrastructure` → `orchestration` → `policy | tools` → `domain`. `lint-imports` fails the check otherwise.
+
+## 10. Tests
+
+- `tests/` mirrors `src/assistant/`: `src/assistant/policy/guard.py` → `tests/policy/test_guard.py`.
+- One `Test<ClassName>` class per class under test; test names say the behaviour: `test_<what>_<expected>`, e.g. `test_tool_call_rejects_wrong_types`.
+- Shared fixtures in `tests/conftest.py`; no `__init__.py` in `tests/`.
+

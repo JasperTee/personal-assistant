@@ -1,6 +1,6 @@
 # Data dictionary
 
-Conventions: every table has `id` (primary key) and `created_at`; times are stored in UTC and shown in Sydney time; schema changes go through migrations (Alembic). The SQLAlchemy models in `src/assistant/infrastructure/db/models.py` must match this file.
+Conventions: every table has `id` (primary key) and `created_at`; times are stored in UTC and shown in Sydney time; schema changes go through migrations (Alembic). The SQLAlchemy models in `src/assistant/infrastructure/db/tables.py` must match this file.
 
 "Scope": **Shared** = used by every bot; **Per persona** = separated by persona.
 

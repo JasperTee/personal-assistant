@@ -7,36 +7,45 @@ A personal AI assistant that talks over Telegram. A **Secretary** bot coordinate
 
 ## Architecture at a glance
 
-A 7-step pipeline; each step belongs to one layer:
+Clean Architecture for the whole system; MVC only at the edge (channel controllers and presenters). A 7-step pipeline; each step belongs to one layer:
 
-| Step | Layer | Folder |
+| Step | Layer | Where |
 | --- | --- | --- |
-| 1 Receive, 6 Send | Channel | `src/assistant/channels/` |
-| 2 Check access | Policy | `src/assistant/policy/access.py` |
-| 3 Context, 4 Loop, 5 Post-process | Orchestration | `src/assistant/orchestration/` |
-| 4 Approve tool calls | Policy | `src/assistant/policy/guard.py` |
-| 4 Run tools | Capability | `src/assistant/tools/` |
-| 7 Store & observe | Infrastructure | `src/assistant/infrastructure/` |
+| 1 Receive | Channel (controller) | `channels/<channel>/controller.py` |
+| 2 Check access, budget | Policy | `policy/access.py`, `policy/budget.py` |
+| 3 Context, 4 Loop, 5 Post-process | Orchestration | `orchestration/` |
+| 4 Approve tool calls | Policy | `policy/guard.py` |
+| 4 Run tools | Capability | `tools/<area>/<verb>.py` |
+| 6 Send | Channel (presenter) | `channels/<channel>/presenter.py` |
+| 7 Store & observe | Infrastructure | `infrastructure/` |
 
-Dependency rule: `domain/` imports nothing; every other folder imports only `domain/` and the layer directly below it; only `main.py` wires concrete classes together.
+Dependency rule (ADR-16, checked by `lint-imports`): a layer imports only the layers below it.
+
+```text
+main.py                          composition root — wires concrete classes
+channels/  |  infrastructure/    adapters: Telegram, scheduler | DB, LLM, config, logs
+orchestration/                   use cases: router, context, agent loop, pipeline
+policy/  |  tools/               rules and capabilities
+domain/                          data contracts, ports, business rules — imports nothing
+```
 
 ## Folder structure
 
 ```text
 personal-assistant/
-├── config/            # personas, prompts, settings — no secrets
-├── docs/              # docs that live with the code
-├── migrations/        # Alembic
-├── data/              # SQLite file when running locally (not committed)
+├── config/                 # personas, prompts, settings — no secrets
+├── docs/                   # docs that live with the code
+├── migrations/             # Alembic
+├── data/                   # SQLite file when running locally (not committed)
 ├── src/assistant/
-│   ├── domain/        # data contracts + interfaces
-│   ├── channels/      # Telegram, scheduler
-│   ├── policy/        # allowlist, roles, guard by RiskLevel
-│   ├── orchestration/ # router, context, agent loop, post-processing, pipeline
-│   ├── tools/         # one file per tool
-│   ├── infrastructure/# LLM, DB, logging
-│   └── main.py        # composition root
-└── tests/             # unit tests + evals.yaml
+│   ├── domain/             # models.py, ports.py, rental/ (business rules)
+│   ├── channels/           # telegram/, scheduler/ — controller.py, presenter.py
+│   ├── policy/             # access.py, budget.py, guard.py
+│   ├── orchestration/      # router, context_builder, agent_loop, postprocess, pipeline
+│   ├── tools/              # registry.py + <area>/<verb>.py (reminders/create.py)
+│   ├── infrastructure/     # config.py, run_logger.py, db/, llm/
+│   └── main.py             # composition root
+└── tests/                  # mirrors src/ (tests/policy/test_guard.py) + evals.yaml
 ```
 
 ## Running locally
@@ -45,6 +54,7 @@ personal-assistant/
 2. Install dependencies: `uv pip install -e ".[dev]"`.
 3. Copy `.env.example` to `.env` and fill in tokens and API keys.
 4. Run the migrations, then run `src/assistant/main.py`.
+5. Before every commit: `ruff check .`, `lint-imports`, `pytest`.
 
 Step-by-step details, deployment and the **emergency shutdown**: [`docs/runbook.md`](docs/runbook.md).
 

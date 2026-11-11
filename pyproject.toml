@@ -16,10 +16,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff"]
+dev = ["pytest", "ruff", "import-linter"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# tests/ mirrors src/ and has no __init__.py files; importlib mode lets two test files
+# share a name in different folders (e.g. tests/x/test_models.py and tests/y/test_models.py).
+addopts = ["--import-mode=importlib"]
 
 [tool.ruff]
 line-length = 100
@@ -28,3 +31,32 @@ line-length = 100
 # E: style, F: bugs, I: import order, N: naming (PEP 8). See docs/conventions.md.
 # No "W" (whitespace) rules: `ruff format` on save already fixes whitespace.
 select = ["E", "F", "I", "N"]
+
+# Dependency rule (ADR-16), checked by `lint-imports`.
+# A layer may import the layers below it, never the ones above.
+# "|" means the two sides are independent: they must not import each other.
+[tool.importlinter]
+root_package = "assistant"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Clean Architecture layers"
+type = "layers"
+layers = [
+    "assistant.main",
+    "assistant.channels | assistant.infrastructure",
+    "assistant.orchestration",
+    "assistant.policy | assistant.tools",
+    "assistant.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "Inner layers do not know frameworks"
+type = "forbidden"
+source_modules = [
+    "assistant.domain",
+    "assistant.policy",
+    "assistant.tools",
+    "assistant.orchestration",
+]
+forbidden_modules = ["telegram", "sqlalchemy", "alembic", "yaml", "dotenv"]

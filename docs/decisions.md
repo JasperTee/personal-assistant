@@ -19,6 +19,7 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 | ADR-13 | Detailed rental data is kept for 3 months only | Accepted | 2026-11-11 |
 | ADR-14 | English for all project text | Accepted | 2026-11-11 |
 | ADR-15 | Scheduled runs: read → select → verify → dedupe → send → confirm → commit | Proposed (phase 5) | 2026-11-11 |
+| ADR-16 | Clean Architecture for the system, MVC only in channels; folders by layer, then area | Accepted | 2026-11-11 |
 
 ---
 
@@ -144,3 +145,23 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 - **Data:** `source_bookmarks` and `deliveries` tables (see data-dictionary.md, phase 5). `events.is_read_by_secretary` and `alerts_sent` fold into `deliveries`.
 - **Why:** scheduled runs fail silently; without bookmarks, a ledger and confirm-before-commit, failures turn into missed or duplicate messages that nobody notices.
 - **Trade-offs:** two extra tables and a more complex scheduled path than the chat pipeline.
+
+## ADR-16 — Clean Architecture for the system, MVC only in channels; folders by layer, then area
+
+- **Context:** files were flat inside each layer (`tools/reminders.py` held several tools, `postprocess.py` mixed formatting with business logic), tests were flat, and the dependency rule was only written in the README. Huy also wanted to combine MVC with Clean Architecture.
+- **Options:** (a) top-level `models/ views/ controllers/` (web-framework MVC); (b) Clean Architecture layers, with MVC roles inside the channel layer only; (c) keep the flat layout.
+- **Chosen:** (b).
+- **Mapping to the Clean Architecture rings:**
+  - Entities: `domain/` (contracts, ports, pure business rules such as `domain/rental/billing.py`).
+  - Use cases: `orchestration/`, `policy/`, `tools/`.
+  - Interface adapters: `channels/<channel>/controller.py` (MVC controller: raw input → `IncomingMessage` → pipeline), `channels/<channel>/presenter.py` (MVC view: `AgentReply` → channel message), and the port implementations in `infrastructure/`.
+  - Frameworks & drivers: python-telegram-bot, SQLAlchemy, the Anthropic SDK; wired only in `main.py`.
+  - MVC model = `domain/`.
+- **Rules:**
+  - Folders go **layer first, then area**: `tools/reminders/create.py` is the tool `reminders.create`; `domain/rental/` holds rental rules.
+  - `postprocess.py` only stores pending actions; formatting, splitting and buttons belong to the presenter.
+  - A layer imports only the layers below it (`main` → `channels | infrastructure` → `orchestration` → `policy | tools` → `domain`); `|` sides don't import each other. Inner layers never import telegram, sqlalchemy, alembic, yaml or dotenv. Checked by import-linter (`lint-imports`, config in `pyproject.toml`).
+  - `tests/` mirrors `src/assistant/`; tests are grouped in `Test<ClassName>` classes; pytest runs with `--import-mode=importlib` so same-named test files can live in different folders.
+- **Why:** the path tells you what a file is and which layer it belongs to; one file, one responsibility; the dependency rule is enforced by a tool instead of memory; MVC where it fits (input/output) without a second `models/` next to `domain/models.py`.
+- **Trade-offs:** more small files and folders; one more dev tool.
+
