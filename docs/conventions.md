@@ -113,3 +113,22 @@ Import only downwards: `main` → `channels | infrastructure` → `orchestration
 - One `Test<ClassName>` class per class under test; test names say the behaviour: `test_<what>_<expected>`, e.g. `test_tool_call_rejects_wrong_types`.
 - Shared fixtures in `tests/conftest.py`; no `__init__.py` in `tests/`.
 
+
+## 11. Commit messages
+
+[Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <summary>`.
+
+- `summary`: imperative, lower case, no final period, ≤ 72 characters — "add reminder tool", not "Added reminder tool."
+- `scope` (optional): the layer or area touched — `domain`, `channels`, `policy`, `orchestration`, `tools`, `infrastructure`, `config`, `docs`, or an area such as `rental`, `reminders`.
+
+| Type | Use for | Example |
+| --- | --- | --- |
+| `feat` | A new behaviour the user can see | `feat(reminders): add reminders.create tool` |
+| `fix` | A bug fix | `fix(policy): block reminders in the past` |
+| `test` | Adding or changing tests only | `test(domain): add tests for domain models` |
+| `refactor` | Restructuring without changing behaviour | `refactor: split tools into area folders` |
+| `docs` | Docs only | `docs: add ADR-16` |
+| `chore` | Tooling, dependencies, config files that don't change behaviour | `chore: add import-linter` |
+| `build` / `ci` | Packaging / CI pipeline | `ci: run ruff and pytest on push` |
+
+One commit, one type. If a change needs two types, make two commits. Breaking change: add `!` after the type (`feat(domain)!: rename ToolResult.content`).
