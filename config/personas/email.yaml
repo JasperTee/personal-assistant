@@ -1,0 +1,20 @@
+# Should — off (until split out, the email tools live in the Secretary)
+id: email
+name: Email
+is_enabled: false
+telegram_token_env: TELEGRAM_TOKEN_EMAIL
+prompt_files:
+  - prompts/rules.md
+  - prompts/email.md
+tools:
+  - email.list        # Gmail + Outlook behind one interface
+  - email.read
+  - email.summarize
+  - email.label
+  - email.draft
+  - email.send        # EXTERNAL — awaits approval
+proactive:
+  important_mail_alert: true
+memory:
+  history: own
+  facts: shared

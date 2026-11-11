@@ -1,0 +1,32 @@
+# General settings — no secrets here (secrets live in .env)
+
+timezone: Australia/Sydney
+currency: AUD
+
+agent_loop:
+  max_iterations: 8          # max loop iterations per run
+  history_message_count: 15  # number of recent messages loaded into context
+
+budget:
+  monthly_limit_usd: 15      # when exceeded, stop calling the LLM and notify the owner
+  warn_at_percent: 80
+
+models:
+  router: cheap              # logical names; mapped to real models in LLMProvider
+  default: standard
+  heavy: strong              # only for report analysis and deep research
+
+pending_actions:
+  expire_after_minutes: 60   # pending actions are cancelled automatically after this
+
+retention:
+  messages_months: 12
+  rental_months: 3           # invoices, meter-book photos, readings, detailed calculations
+
+rental:
+  invoices_dir: data/invoices   # data/invoices/2026-11/block-a/room-05.pdf
+  photos_dir: data/meter_photos
+  invoice_formats: [pdf, png]
+
+proactive:
+  quiet_hours: "23:00-07:00" # no proactive messages except urgent ones

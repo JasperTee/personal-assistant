@@ -1,0 +1,19 @@
+# Phase 5b — off
+id: research
+name: Research
+is_enabled: false
+telegram_token_env: TELEGRAM_TOKEN_RESEARCH
+prompt_files:
+  - prompts/rules.md
+  - prompts/research.md
+tools:
+  - papers.fetch
+  - papers.search
+  - web.search
+  - notes.save
+  - research.subagent
+proactive:
+  weekly_papers: true
+memory:
+  history: own
+  facts: shared

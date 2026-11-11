@@ -1,0 +1,19 @@
+# Should — off
+id: finance
+name: Finance
+is_enabled: false
+telegram_token_env: TELEGRAM_TOKEN_FINANCE
+prompt_files:
+  - prompts/rules.md
+  - prompts/finance.md
+tools:
+  - expenses.*
+  - receipts.read_photo
+  - budgets.*
+  - finance.report
+proactive:
+  budget_alerts: true
+  weekly_report: true
+memory:
+  history: own
+  facts: shared

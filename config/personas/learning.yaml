@@ -1,0 +1,22 @@
+# Should — off
+id: learning
+name: Learning & Career
+is_enabled: false
+telegram_token_env: TELEGRAM_TOKEN_LEARNING
+prompt_files:
+  - prompts/rules.md
+  - prompts/learning.md
+tools:
+  - deadlines.*          # assignments, exams, applications
+  - study.plan           # break big tasks into small ones, schedule them
+  - docs.search          # shared with the Documents bot (lectures)
+  - docs.ask
+  - applications.*       # track internship applications
+  # - pte.practice       # Could
+  # - flashcards.*       # Could
+proactive:
+  deadline_reminders: true
+  application_follow_up: true
+memory:
+  history: own
+  facts: shared

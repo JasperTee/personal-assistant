@@ -1,0 +1,25 @@
+# MVP — on, together with the Secretary
+id: rental
+name: Rental
+is_enabled: true
+telegram_token_env: TELEGRAM_TOKEN_RENTAL
+prompt_files:
+  - prompts/rules.md
+  - prompts/rental.md
+tools:
+  - rental.read_meter_photo     # handwritten photo -> table of numbers, uncertain cells flagged
+  - rental.confirm_readings     # Huy confirms / corrects
+  - rental.calculate_bills
+  - rental.render_invoice       # PDF / PNG -> data/invoices/<year-month>/<block>/
+  - tenants.*
+  # - contracts.*               # Should
+  # - rooms.check_in / check_out
+  # - rental.payment_status
+  # - rental.draft_tenant_message  # Could — drafts only, Huy sends them
+# Cleaning up data older than 3 months: a scheduler job in plain code — not an LLM tool
+proactive:
+  rent_due_reminder: false      # Should
+  contract_expiry_alert: false  # Should
+memory:
+  history: own
+  facts: shared

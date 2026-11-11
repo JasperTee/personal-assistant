@@ -1,0 +1,21 @@
+# Should — off
+id: documents
+name: Documents
+is_enabled: false
+telegram_token_env: TELEGRAM_TOKEN_DOCUMENTS
+prompt_files:
+  - prompts/rules.md
+  - prompts/documents.md
+tools:
+  - docs.ingest       # read, classify, tag, store
+  - docs.search       # find by asking (RAG)
+  - docs.ask          # Q&A over one document
+  - docs.organize
+proactive:
+  expiry_alerts: true
+memory:
+  history: own
+  facts: shared
+sensitive:
+  # identity documents: stored encrypted, only metadata read (type, expiry date), content never sent to the LLM
+  categories: [identity, visa, bank]

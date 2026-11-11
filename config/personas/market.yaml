@@ -1,0 +1,19 @@
+# Phase 6 — off
+id: market
+name: Market
+is_enabled: false
+telegram_token_env: TELEGRAM_TOKEN_MARKET
+prompt_files:
+  - prompts/rules.md
+  - prompts/market.md
+tools:
+  - market.price
+  - market.news
+  - market.report_search
+proactive:
+  alerts: true
+  threshold_percent: 3     # example — tune once there is real data
+  cooldown_hours: 24
+memory:
+  history: own
+  facts: shared
