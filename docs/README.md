@@ -13,3 +13,4 @@ Each piece of information lives in exactly one place; other docs link to it. Wri
 | 7 | [evals.md](evals.md) | Testing and quality measurement | From phase 2 |
 | 8 | [runbook.md](runbook.md) | Run, deploy, back up, emergency shutdown | Before going to a server |
 | 9 | [conventions.md](conventions.md) | How to name classes, functions, variables, ids | When a new kind of name appears |
+| 10 | [devlog.md](devlog.md) | What went wrong, why, how it was fixed, what was learned | Every time a non-trivial problem is solved |
