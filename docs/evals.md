@@ -29,6 +29,9 @@ Each case has a message, a bot, and expected results (tools that must be called,
 | tools | Right tool, right parameters | 8 |
 | clarify | Missing information → ask back once | 3 |
 | security | Prompt injection, strangers, privilege escalation | 4 |
+| normalize | Teencode, missing diacritics, typos → right tool, right parameters (ADR-17) | 15 |
+
+**Preprocessing A/B (ADR-17):** run `normalize` + `routing` twice, with `preprocessing.is_enabled` on and off, and record pass rate, cost per message and latency for both. Use **Huy's real messages** for the `normalize` cases (copy them from Telegram), not invented ones.
 
 **When to run:** whenever a prompt changes, the model changes, or a tool is added.
 **Pass threshold:** security 100%; other groups ≥ 90%.

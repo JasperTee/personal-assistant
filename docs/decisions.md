@@ -20,6 +20,7 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 | ADR-14 | English for all project text | Accepted | 2026-11-11 |
 | ADR-15 | Scheduled runs: read → select → verify → dedupe → send → confirm → commit | Proposed (phase 5) | 2026-11-11 |
 | ADR-16 | Clean Architecture for the system, MVC only in channels; folders by layer, then area | Accepted | 2026-11-11 |
+| ADR-17 | LLM input preprocessing (normalised + original text); verify with evals | Accepted | 2026-11-12 |
 
 ---
 
@@ -164,4 +165,27 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
   - `tests/` mirrors `src/assistant/`; tests are grouped in `Test<ClassName>` classes; pytest runs with `--import-mode=importlib` so same-named test files can live in different folders.
 - **Why:** the path tells you what a file is and which layer it belongs to; one file, one responsibility; the dependency rule is enforced by a tool instead of memory; MVC where it fits (input/output) without a second `models/` next to `domain/models.py`.
 - **Trade-offs:** more small files and folders; one more dev tool.
+
+## ADR-17 — LLM input preprocessing (normalised + original text); verify with evals
+
+- **Context:** most messages are Vietnamese with teencode ("ko", "nhma", "t"), missing diacritics and typos. Idea: a cheap model first translates to English, expands teencode, fixes spelling and rewrites the message in a standard form, so the strong model routes and decides more accurately with fewer tokens.
+- **Options:**
+  - (a) strong model gets the normalised English **and** the original text;
+  - (b) strong model gets only the normalised English;
+  - (c) no LLM preprocessing: the router and the strong model get the original text.
+- **Evidence:**
+  - Anthropic, "Building effective agents": use the simplest solution and add steps only when they demonstrably improve results; chaining model calls trades latency for accuracy.
+  - Claude docs, "Multilingual support": strong models keep roughly 97–99% of their English score in other languages; cheap models drop more on low-resource languages. Vietnamese is not in the table, and no benchmark covers Vietnamese teencode. The docs do not recommend translating to English first; they recommend stating the reply language in the system prompt.
+  - Etxaniz et al. 2023 ("Do Multilingual Language Models Think Better in English?"): translating to English first helped 2023-era models. Liu et al., NAACL 2025 ("Is Translation All You Need?"): translation is a strong baseline but not always best; native-language prompts keep cultural and language nuance.
+  - Token cost: the user's message is under 1% of a strong-model call (system prompt, tool definitions and history dominate), so translating saves almost nothing.
+  - Risk: a mistranslation ("1tr2", "mai" as a name instead of "tomorrow") propagates; in (b) the strong model can't detect it.
+- **Chosen:** (a), with a switch `preprocessing.is_enabled` in `settings.yaml` (default `true`) so (c) can be compared on the same eval suite.
+  - One cheap-model call, merged with the router (no extra call): returns the normalised English text, the intent and the entities.
+  - The original text is always kept and sent to the strong model next to the normalised text (about +1% tokens).
+  - Code checks that amounts, dates and room numbers in the normalised text match the original; on a mismatch the bot asks back instead of guessing.
+  - The bot still replies in the language Huy writes in.
+- **Not affected:** code-level cleaning still happens without an LLM: Unicode NFC normalisation, trimming, length limit, duplicate Telegram updates, time zone conversion.
+- **Why (a) before measuring:** nothing can be measured yet (no router, agent loop or tools exist). Huy writes mostly teencode, and the router runs on a cheap model, which loses more accuracy outside English; keeping the original text removes the main risk of (b). The evidence above says the gain may be small, so this is verified, not assumed.
+- **Verification rule (after phase 2):** run the `normalize` and `routing` eval groups with the switch on and off. Turn preprocessing **off** (option c) if the switch-off run is within 2 percentage points of the switch-on run; it is simpler and cheaper. Keep it on otherwise.
+- **Trade-offs:** one more structured output to build and test in the router; a little more latency and cost per message until the evals show whether it is needed.
 

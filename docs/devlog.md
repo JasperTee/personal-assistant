@@ -23,11 +23,11 @@ Status tags: no tag = solved; **(open)** = not solved yet.
 
 ---
 
-### 2026-11-12 — No input preprocessing step (open)
+### 2026-11-12 — No input preprocessing step (open — waiting for eval results)
 - **Situation:** most messages are Vietnamese with teencode ("ko", "nhma", "1tr2") and typos, but the pipeline sent raw text straight into context building and the agent loop.
 - **Cause:** the pipeline was designed around the happy path; what real input looks like was never written down.
-- **Fix:** being decided — options are a cheap model normalising the message before routing, or sending raw text and measuring first. Will be recorded as ADR-17.
-- **Lesson:** list what real input looks like (with real examples) before designing the pipeline.
+- **Fix:** compared three options against Anthropic's agent guide, the Claude multilingual docs and two papers. Chose a cheap-model normalisation step merged with the router, keeping the original text and checking numbers in code; a `normalize` eval group of real messages will verify it against no preprocessing (switch `preprocessing.is_enabled`). ADR-17.
+- **Lesson:** list what real input looks like (with real examples) before designing the pipeline; when a step can't be measured yet, add it behind a switch and plan how to verify it.
 
 ### 2026-11-11 — Dependency rule existed only on paper
 - **Situation:** "domain imports nothing" was written in the README, but nothing stopped a wrong import.
