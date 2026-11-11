@@ -1,4 +1,4 @@
-# Should — off
+# priority: Should — off
 id: learning
 name: Learning & Career
 is_enabled: false
@@ -12,8 +12,8 @@ tools:
   - docs.search          # shared with the Documents bot (lectures)
   - docs.ask
   - applications.*       # track internship applications
-  # - pte.practice       # Could
-  # - flashcards.*       # Could
+  # - pte.practice       # priority: Could
+  # - flashcards.*       # priority: Could
 proactive:
   deadline_reminders: true
   application_follow_up: true

@@ -1,4 +1,4 @@
-# General settings — no secrets here (secrets live in .env)
+# general settings — no secrets here (secrets live in .env)
 
 timezone: Australia/Sydney
 currency: AUD

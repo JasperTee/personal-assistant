@@ -1,4 +1,4 @@
-# Eval suite — runs against the real LLM. See docs/evals.md.
+# eval suite — runs against the real LLM; see docs/evals.md
 # expect_tools: tools that must be called (order doesn't matter)
 # forbid_tools: tools that must not be called
 # expect_reply_contains / expect_clarify: checks on the reply
@@ -56,7 +56,7 @@
   expect_policy_block: expenses.add            # over the value limit
 
 # --- normalize (ADR-17): teencode, missing diacritics, typos ---
-# Starter cases. Replace / extend with Huy's real messages until there are 15.
+# starter cases; replace / extend with Huy's real messages until there are 15.
 
 - id: norm-01
   group: normalize

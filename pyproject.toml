@@ -3,7 +3,7 @@ name = "personal-assistant"
 version = "0.1.0"
 description = "Personal AI assistant over Telegram — Secretary + specialist bots"
 requires-python = ">=3.12"
-# Added phase by phase (see the Libraries table in the design document).
+# added phase by phase (see the Libraries table in the design document).
 dependencies = [
     "pydantic>=2",            # phase 1 — data contracts
     "python-telegram-bot>=21",# phase 1 — Telegram adapter
@@ -28,12 +28,12 @@ addopts = ["--import-mode=importlib"]
 line-length = 100
 
 [tool.ruff.lint]
-# E: style, F: bugs, I: import order, N: naming (PEP 8). See docs/conventions.md.
-# No "W" (whitespace) rules: `ruff format` on save already fixes whitespace.
-select = ["E", "F", "I", "N"]
+# E: style, F: bugs, I: import order, N: naming (PEP 8); see docs/conventions.md.
+# no "W" (whitespace) rules: `ruff format` on save already fixes whitespace.
+select = ["E", "F", "I", "N", "D403"]  # D403: docstrings start with a capital letter
 
-# Dependency rule (ADR-16), checked by `lint-imports`.
-# A layer may import the layers below it, never the ones above.
+# dependency rule (ADR-16), checked by `lint-imports`.
+# a layer may import the layers below it, never the ones above.
 # "|" means the two sides are independent: they must not import each other.
 [tool.importlinter]
 root_package = "assistant"

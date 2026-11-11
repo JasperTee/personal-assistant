@@ -128,7 +128,22 @@ Import only downwards: `main` → `channels | infrastructure` → `orchestration
 | `test` | Adding or changing tests only | `test(domain): add tests for domain models` |
 | `refactor` | Restructuring without changing behaviour | `refactor: split tools into area folders` |
 | `docs` | Docs only | `docs: add ADR-16` |
+| `style` | Formatting, comment / docstring wording; no code change | `style: start docstrings upper case, comments lower case` |
 | `chore` | Tooling, dependencies, config files that don't change behaviour | `chore: add import-linter` |
 | `build` / `ci` | Packaging / CI pipeline | `ci: run ruff and pytest on push` |
 
 One commit, one type. If a change needs two types, make two commits. Breaking change: add `!` after the type (`feat(domain)!: rename ToolResult.content`).
+
+## 12. Docstrings and comments
+
+| What | Starts with | Example |
+| --- | --- | --- |
+| Docstring (module, class, function) | **Capital letter**, full sentence, ends with `.` | `"""Send the context to the LLM and return its response."""` |
+| Comment (`#`, in Python, YAML, TOML, `.env.example`) | **lower-case letter**, no final `.` | `# cannot be changed after creation` |
+
+- A docstring that starts with a code name puts a word in front: `"""Tool reminders.create (WRITE_SELF): ..."""`, `"""Tests for reminders.create: ..."""`.
+- A comment keeps the original case when it starts with a code name, literal, acronym or proper noun: `# True if the tool call failed`, `# LLM normalisation…`, `# Huy confirms`, `# EXTERNAL — awaits approval`.
+- `TODO` stays upper case so editors and `grep TODO` find it.
+- Several sentences in one comment are joined with `;`, not `. `: `# starter cases; replace with real messages`.
+- Ruff rule `D403` checks function and method docstrings; module and class docstrings and comments are checked in code review.
+- Markdown headings (`# Persona: Secretary` in `config/prompts/*.md`) are not comments.

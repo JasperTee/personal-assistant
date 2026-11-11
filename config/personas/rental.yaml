@@ -12,14 +12,14 @@ tools:
   - rental.calculate_bills
   - rental.render_invoice       # PDF / PNG -> data/invoices/<year-month>/<block>/
   - tenants.*
-  # - contracts.*               # Should
+  # - contracts.*               # priority: Should
   # - rooms.check_in / check_out
   # - rental.payment_status
-  # - rental.draft_tenant_message  # Could — drafts only, Huy sends them
-# Cleaning up data older than 3 months: a scheduler job in plain code — not an LLM tool
+  # - rental.draft_tenant_message  # priority: Could — drafts only, Huy sends them
+# cleaning up data older than 3 months: a scheduler job in plain code — not an LLM tool
 proactive:
-  rent_due_reminder: false      # Should
-  contract_expiry_alert: false  # Should
+  rent_due_reminder: false      # priority: Should
+  contract_expiry_alert: false  # priority: Should
 memory:
   history: own
   facts: shared

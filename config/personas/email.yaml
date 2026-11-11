@@ -1,4 +1,4 @@
-# Should — off (until split out, the email tools live in the Secretary)
+# priority: Should — off (until split out, the email tools live in the Secretary)
 id: email
 name: Email
 is_enabled: false
