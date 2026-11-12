@@ -147,3 +147,34 @@ One commit, one type. If a change needs two types, make two commits. Breaking ch
 - Several sentences in one comment are joined with `;`, not `. `: `# starter cases; replace with real messages`.
 - Ruff rule `D403` checks function and method docstrings; module and class docstrings and comments are checked in code review.
 - Markdown headings (`# Persona: Secretary` in `config/prompts/*.md`) are not comments.
+
+## 13. Branches and pull requests (ADR-18)
+
+`main` is protected: nobody commits or pushes to it directly, not even the owner. Every change goes through a branch and a pull request (PR).
+
+**Branch name:** `<type>/<short-description>`, the same types as commits (§11), lower case, words joined with `-`:
+
+| Change | Branch |
+| --- | --- |
+| New Telegram echo | `feat/telegram-echo` |
+| Fix a bug in the guard | `fix/guard-past-reminders` |
+| Docs only | `docs/git-workflow` |
+| CI pipeline | `ci/run-checks` |
+
+**Flow:**
+
+1. Start from an up-to-date `main`: `git switch main`, `git pull`.
+2. Create the branch: `git switch -c feat/telegram-echo`.
+3. Commit in small steps (§11: one commit, one type).
+4. Before pushing, run the checks: `ruff check .`, `lint-imports`, `pytest`.
+5. Push the branch: `git push -u origin feat/telegram-echo`.
+6. Open a PR: `gh pr create`. Title = the main change in commit format (`feat(channels): echo Telegram messages through the pipeline`); fill in the template.
+7. Review the diff on GitHub (Files changed), fix anything found with new commits on the same branch.
+8. Merge with **Rebase and merge** (keeps every Conventional Commit on a straight `main` history); the branch is deleted after merging.
+9. Back to `main`: `git switch main`, `git pull`, delete the local branch: `git branch -d feat/telegram-echo`.
+
+**Rules:**
+
+- One PR, one purpose. Small PRs (under ~400 changed lines) are reviewed better than big ones.
+- A PR is merged only when all checks pass.
+- Never rewrite `main`'s history (`git push --force` to `main` is blocked).

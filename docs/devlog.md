@@ -23,6 +23,12 @@ Status tags: no tag = solved; **(open)** = not solved yet.
 
 ---
 
+### 2026-11-12 — Commits went straight to `main`
+- **Situation:** every change, including new code, was committed and pushed directly to `main`, with no branch, pull request or review.
+- **Cause:** the git workflow was never written down, so the quickest path (commit on `main`) became the habit.
+- **Fix:** GitHub flow: one branch per change, PR with a template, `main` protected on GitHub, rebase-and-merge only. ADR-18, docs/conventions.md §13.
+- **Lesson:** decide the team process (branches, reviews, checks) before writing code, and let the platform enforce it.
+
 ### 2026-11-12 — No input preprocessing step (open — waiting for eval results)
 - **Situation:** most messages are Vietnamese with teencode ("ko", "nhma", "1tr2") and typos, but the pipeline sent raw text straight into context building and the agent loop.
 - **Cause:** the pipeline was designed around the happy path; what real input looks like was never written down.

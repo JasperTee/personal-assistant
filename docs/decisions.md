@@ -189,3 +189,17 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 - **Verification rule (after phase 2):** run the `normalize` and `routing` eval groups with the switch on and off. Turn preprocessing **off** (option c) if the switch-off run is within 2 percentage points of the switch-on run; it is simpler and cheaper. Keep it on otherwise.
 - **Trade-offs:** one more structured output to build and test in the router; a little more latency and cost per message until the evals show whether it is needed.
 
+
+## ADR-18 — Branches, pull requests and a protected `main`
+
+- **Context:** commits went straight to `main`. The project should follow the same process as a large company's team, both to learn it and so the history shows reviewed, checked changes.
+- **Options:** (a) commit to `main` (fast, no review); (b) GitHub flow: short-lived branch per change, pull request, merge to a protected `main`; (c) Git flow with `develop` and `release/*` branches.
+- **Chosen:** (b) GitHub flow.
+  - Branch name `<type>/<short-description>`, same types as Conventional Commits.
+  - Every change is merged through a PR that uses `.github/pull_request_template.md`.
+  - `main` is protected on GitHub: PR required, no force-push, no deletion, rules apply to admins too.
+  - Merge method: rebase and merge only, so every Conventional Commit stays on a linear `main`; branches are deleted after merging.
+  - Next: CI (GitHub Actions) runs `ruff check .`, `lint-imports` and `pytest` on every PR and becomes a required check.
+- **Why:** (b) is what most product teams use with continuous delivery; (c) adds release branches this project doesn't need.
+- **Trade-offs:** a few more commands per change; a solo owner can't get a second approver, so the review is the owner reading the PR diff (and Claude reviewing it).
+- **Rules:** docs/conventions.md §13.
