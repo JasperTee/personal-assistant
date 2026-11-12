@@ -165,6 +165,7 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
   - `tests/` mirrors `src/assistant/`; tests are grouped in `Test<ClassName>` classes; pytest runs with `--import-mode=importlib` so same-named test files can live in different folders.
 - **Why:** the path tells you what a file is and which layer it belongs to; one file, one responsibility; the dependency rule is enforced by a tool instead of memory; MVC where it fits (input/output) without a second `models/` next to `domain/models.py`.
 - **Trade-offs:** more small files and folders; one more dev tool.
+- **Update:** the use-case folders moved into `application/` (ADR-19).
 
 ## ADR-17 — LLM input preprocessing (normalised + original text); verify with evals
 
@@ -203,3 +204,14 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 - **Why:** (b) is what most product teams use with continuous delivery; (c) adds release branches this project doesn't need.
 - **Trade-offs:** a few more commands per change; a solo owner can't get a second approver, so the review is the owner reading the PR diff (and Claude reviewing it).
 - **Rules:** docs/conventions.md §13.
+
+## ADR-19 — Use cases live in `application/`
+
+- **Context:** the use-case ring was split across three top-level folders (`orchestration/`, `policy/`, `tools/`). `orchestration` is not a name Clean Architecture readers recognise, and the top level mixed rings with parts of a ring.
+- **Options:** (a) keep the three folders; (b) rename `orchestration/` to `application/` only; (c) one `application/` folder holding the pipeline steps, `policy/` and `tools/`.
+- **Chosen:** (c). The top level of `src/assistant/` now shows exactly the rings: `domain/` (entities), `application/` (use cases), `channels/` and `infrastructure/` (interface adapters), `main.py` (composition root).
+  - A second import-linter contract keeps the order inside `application/`: `pipeline` → `agent_loop | context_builder | postprocess | router` → `policy | tools`.
+  - `tests/` follows: `tests/application/`, `tests/application/policy/`, `tests/application/tools/`.
+  - `channels/` keeps its name: "channel" is the chatbot industry's word for Telegram, Teams, Slack, and the folder also holds the scheduler, so `presentation/` or `web/` would be wrong.
+- **Why:** `application/` is the name used by the common .NET and Python Clean Architecture templates (`Domain / Application / Infrastructure / Web`); a reader sees the four rings at a glance.
+- **Trade-offs:** one level deeper for tools (`application/tools/reminders/create.py`); every import of the moved modules changed once.

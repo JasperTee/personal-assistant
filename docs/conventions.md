@@ -95,7 +95,7 @@ Async functions are named like sync ones (no `_async` suffix).
 - English only (ADR-14), no abbreviations except well-known ones: `id`, `url`, `db`, `llm`, `ms`.
 - Use the project's words consistently: **persona** (not bot/agent in code), **tool** (not function/skill), **run** (one pass through the pipeline), **owner** (Huy), **tenant**.
 
-## 9. Structure (ADR-16)
+## 9. Structure (ADR-16, ADR-19)
 
 Layer first, then area. The path tells you the layer and the job:
 
@@ -106,14 +106,16 @@ Layer first, then area. The path tells you the layer and the job:
 | Interface (Protocol) | `domain/ports.py` | `LLMProvider` |
 | Channel input (MVC controller) | `channels/<channel>/controller.py` | `TelegramController` |
 | Channel output (MVC view) | `channels/<channel>/presenter.py` | `TelegramPresenter` |
-| Tool | `tools/<area>/<verb>.py` — same as the tool name | `reminders.create` → `tools/reminders/create.py` |
+| Use case (pipeline step) | `application/<step>.py` | `application/pipeline.py` → `Pipeline` |
+| Policy (rules) | `application/policy/<rule>.py` | `application/policy/guard.py` |
+| Tool | `application/tools/<area>/<verb>.py` — same as the tool name | `reminders.create` → `application/tools/reminders/create.py` |
 | Port implementation | `infrastructure/<kind>/<technology>.py` | `infrastructure/llm/claude.py` → `ClaudeLLMProvider` |
 
-Import only downwards: `main` → `channels | infrastructure` → `orchestration` → `policy | tools` → `domain`. `lint-imports` fails the check otherwise.
+Import only downwards: `main` → `channels | infrastructure` → `application` → `domain`. Inside `application/`: `pipeline` → `agent_loop | context_builder | postprocess | router` → `policy | tools`. `lint-imports` fails the check otherwise.
 
 ## 10. Tests
 
-- `tests/` mirrors `src/assistant/`: `src/assistant/policy/guard.py` → `tests/policy/test_guard.py`.
+- `tests/` mirrors `src/assistant/`: `src/assistant/application/policy/guard.py` → `tests/application/policy/test_guard.py`.
 - One `Test<ClassName>` class per class under test; test names say the behaviour: `test_<what>_<expected>`, e.g. `test_tool_call_rejects_wrong_types`.
 - Shared fixtures in `tests/conftest.py`; no `__init__.py` in `tests/`.
 
@@ -123,7 +125,7 @@ Import only downwards: `main` → `channels | infrastructure` → `orchestration
 [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <summary>`.
 
 - `summary`: imperative, lower case, no final period, ≤ 72 characters — "add reminder tool", not "Added reminder tool."
-- `scope` (optional): the layer or area touched — `domain`, `channels`, `policy`, `orchestration`, `tools`, `infrastructure`, `config`, `docs`, or an area such as `rental`, `reminders`.
+- `scope` (optional): the layer or area touched — `domain`, `channels`, `application`, `policy`, `tools`, `infrastructure`, `config`, `docs`, or an area such as `rental`, `reminders`.
 
 | Type | Use for | Example |
 | --- | --- | --- |
