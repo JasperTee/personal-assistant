@@ -6,11 +6,11 @@ domain/ports.py.
 
 from telegram.ext import Application, MessageHandler, filters
 
+from assistant.application.pipeline import Pipeline
 from assistant.channels.telegram.controller import TelegramController
 from assistant.channels.telegram.presenter import TelegramPresenter
 from assistant.infrastructure.config import load_settings
 from assistant.infrastructure.llm.fake import FakeLLMProvider
-from assistant.orchestration.pipeline import Pipeline
 
 
 def main() -> None:

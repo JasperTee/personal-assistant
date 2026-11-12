@@ -6,9 +6,9 @@ No business logic and no formatting here.
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from assistant.application.pipeline import Pipeline
 from assistant.channels.telegram.presenter import TelegramPresenter
 from assistant.domain.models import IncomingMessage
-from assistant.orchestration.pipeline import Pipeline
 
 
 class TelegramController:

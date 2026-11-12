@@ -3,9 +3,9 @@
 import asyncio
 from datetime import UTC, datetime
 
+from assistant.application.pipeline import Pipeline
 from assistant.domain.models import IncomingMessage
 from assistant.infrastructure.llm.fake import FakeLLMProvider
-from assistant.orchestration.pipeline import Pipeline
 
 
 class TestPipeline:
