@@ -8,10 +8,10 @@ from types import SimpleNamespace
 
 from telegram import Update
 
+from assistant.application.pipeline import Pipeline
 from assistant.channels.telegram.controller import TelegramController
 from assistant.channels.telegram.presenter import TelegramPresenter
 from assistant.infrastructure.llm.fake import FakeLLMProvider
-from assistant.orchestration.pipeline import Pipeline
 
 SAMPLE_UPDATE = {
     "update_id": 1,

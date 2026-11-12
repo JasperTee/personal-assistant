@@ -45,18 +45,22 @@ type = "layers"
 layers = [
     "assistant.main",
     "assistant.channels | assistant.infrastructure",
-    "assistant.orchestration",
-    "assistant.policy | assistant.tools",
+    "assistant.application",
     "assistant.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "Use cases: pipeline steps above policy and tools"
+type = "layers"
+containers = ["assistant.application"]
+layers = [
+    "pipeline",
+    "agent_loop | context_builder | postprocess | router",
+    "policy | tools",
 ]
 
 [[tool.importlinter.contracts]]
 name = "Inner layers do not know frameworks"
 type = "forbidden"
-source_modules = [
-    "assistant.domain",
-    "assistant.policy",
-    "assistant.tools",
-    "assistant.orchestration",
-]
+source_modules = ["assistant.domain", "assistant.application"]
 forbidden_modules = ["telegram", "sqlalchemy", "alembic", "yaml", "dotenv"]
