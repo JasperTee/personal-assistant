@@ -12,20 +12,19 @@ Clean Architecture for the whole system; MVC only at the edge (channel controlle
 | Step | Layer | Where |
 | --- | --- | --- |
 | 1 Receive | Channel (controller) | `channels/<channel>/controller.py` |
-| 2 Check access, budget | Policy | `policy/access.py`, `policy/budget.py` |
-| 3 Context, 4 Loop, 5 Post-process | Orchestration | `orchestration/` |
-| 4 Approve tool calls | Policy | `policy/guard.py` |
-| 4 Run tools | Capability | `tools/<area>/<verb>.py` |
+| 2 Check access, budget | Application (policy) | `application/policy/access.py`, `application/policy/budget.py` |
+| 3 Context, 4 Loop, 5 Post-process | Application | `application/` |
+| 4 Approve tool calls | Application (policy) | `application/policy/guard.py` |
+| 4 Run tools | Application (tools) | `application/tools/<area>/<verb>.py` |
 | 6 Send | Channel (presenter) | `channels/<channel>/presenter.py` |
 | 7 Store & observe | Infrastructure | `infrastructure/` |
 
-Dependency rule (ADR-16, checked by `lint-imports`): a layer imports only the layers below it.
+Dependency rule (ADR-16, ADR-19, checked by `lint-imports`): a layer imports only the layers below it.
 
 ```text
 main.py                          composition root — wires concrete classes
 channels/  |  infrastructure/    adapters: Telegram, scheduler | DB, LLM, config, logs
-orchestration/                   use cases: router, context, agent loop, pipeline
-policy/  |  tools/               rules and capabilities
+application/                     use cases: pipeline → router, context, agent loop → policy | tools
 domain/                          data contracts, ports, business rules — imports nothing
 ```
 
@@ -40,12 +39,12 @@ personal-assistant/
 ├── src/assistant/
 │   ├── domain/             # models.py, ports.py, rental/ (business rules)
 │   ├── channels/           # telegram/, scheduler/ — controller.py, presenter.py
-│   ├── policy/             # access.py, budget.py, guard.py
-│   ├── orchestration/      # router, context_builder, agent_loop, postprocess, pipeline
-│   ├── tools/              # registry.py + <area>/<verb>.py (reminders/create.py)
+│   ├── application/        # use cases: pipeline, router, context_builder, agent_loop, postprocess
+│   │   ├── policy/         # access.py, budget.py, guard.py
+│   │   └── tools/          # registry.py + <area>/<verb>.py (reminders/create.py)
 │   ├── infrastructure/     # config.py, run_logger.py, db/, llm/
 │   └── main.py             # composition root
-└── tests/                  # mirrors src/ (tests/policy/test_guard.py) + evals.yaml
+└── tests/                  # mirrors src/ (tests/application/policy/test_guard.py) + evals.yaml
 ```
 
 ## Running locally

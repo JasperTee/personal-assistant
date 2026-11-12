@@ -23,6 +23,12 @@ Status tags: no tag = solved; **(open)** = not solved yet.
 
 ---
 
+### 2026-11-12 — Folder names didn't match Clean Architecture
+- **Situation:** the use-case ring was spread over `orchestration/`, `policy/` and `tools/` at the top level; `orchestration` is not a name Clean Architecture readers recognise.
+- **Cause:** folders were named after what each piece does, not after the ring it belongs to.
+- **Fix:** moved all three into `application/`; the top level now shows exactly the rings; a second import-linter contract keeps the order inside `application/`. ADR-19.
+- **Lesson:** name top-level folders after the architecture's standard terms; name the folders inside them after the job.
+
 ### 2026-11-12 — Commits went straight to `main`
 - **Situation:** every change, including new code, was committed and pushed directly to `main`, with no branch, pull request or review.
 - **Cause:** the git workflow was never written down, so the quickest path (commit on `main`) became the habit.
