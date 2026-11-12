@@ -76,6 +76,10 @@ Start with a verb. The same verb always means the same thing:
 | `parse_` | Turn raw data into a model | the model |
 | `to_` | Convert to another format | the converted value |
 | `check_` / `validate_` | Verify, raise on failure | `None` |
+| `load_` | Read config or files from disk at start-up | the typed object |
+| `generate_` | Ask an LLM to produce something | the LLM's response |
+| `send_` | Deliver something outside (a chat message) | `None` |
+| `handle_` | Entry point a framework calls for an event | `None` |
 
 Async functions are named like sync ones (no `_async` suffix).
 

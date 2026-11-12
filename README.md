@@ -53,7 +53,7 @@ personal-assistant/
 1. Python 3.12+; create a virtualenv: `uv venv`.
 2. Install dependencies: `uv pip install -e ".[dev]"`.
 3. Copy `.env.example` to `.env` and fill in tokens and API keys.
-4. Run the migrations, then run `src/assistant/main.py`.
+4. Start the bot: `python -m assistant.main` (phase 1 echoes your messages; Ctrl+C stops it).
 5. Before every commit: `ruff check .`, `lint-imports`, `pytest`.
 
 Step-by-step details, deployment and the **emergency shutdown**: [`docs/runbook.md`](docs/runbook.md).
