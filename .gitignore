@@ -4,9 +4,9 @@
 credentials*.json
 token*.json
 
-# Local data
-data/*
-!data/.gitkeep
+# Local data (one data/ folder per service)
+services/*/data/*
+!services/*/data/.gitkeep
 *.sqlite
 *.db
 
