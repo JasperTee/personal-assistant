@@ -1,0 +1,33 @@
+[project]
+name = "rental"
+version = "0.1.0"
+description = "Rental service: rooms, tenants, meter readings, bills, invoices (ADR-25)"
+requires-python = ">=3.12"
+# added step by step, like services/assistant.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "import-linter"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# tests/ mirrors src/ and has no __init__.py files (same as services/assistant).
+addopts = ["--import-mode=importlib"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# same rules as services/assistant; see docs/conventions.md.
+select = ["E", "F", "I", "N", "D403"]
+
+# only domain/ exists so far; the layers contract is added with application/ (ADR-26).
+[tool.importlinter]
+root_package = "rental"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Rental domain is pure: no frameworks, no other service"
+type = "forbidden"
+source_modules = ["rental.domain"]
+forbidden_modules = ["assistant", "market", "finance", "sqlalchemy", "grpc"]
