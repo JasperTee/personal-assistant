@@ -37,7 +37,7 @@ Every piece of data is graded on five **independent** axes. Never merge two axes
 | 3 | Macro | USD, interest rates, Chinese stimulus | interest rates, unemployment, inflation |
 | 4 | Exogenous | cyclones in the Pilbara | weather anomalies, Tết / Christmas |
 
-- The five tiers are the same for every sector; only the content changes, so the content lives in config (`config/market/factor_maps/<sector>.yaml`), not in code.
+- The five tiers are the same for every sector; only the content changes, so the content lives in config (`services/market/config/factor_maps/<sector>.yaml`), not in code.
 - The factor map is a **graph**: nodes are factors, edges are causal links (`supplies_to`, `demand_driver`, `cost_input`, `substitute`, ...). The tier of a node is computed by code as the number of edges on the shortest path to the subject; the YAML does not declare it.
 - Evidence from tier 2 or higher is only used if it carries a **path** of edges down to tier 0.
 
@@ -111,7 +111,7 @@ Panic moves prices away from fundamentals for a while; the analysis must tell th
 | Text | news pessimism, social posts and comments | press C, social **F** by default, credibility ≤ 3 | Noisy, can be manipulated |
 
 - Every signal is stored as **deviation from its own recent baseline** (`value_vs_norm`), not as a level.
-- **Panic state** = at least two families cross their thresholds at the same time (thresholds in `config/market/sentiment.yaml`, tuned on real data, not guessed). Text alone never declares panic.
+- **Panic state** = at least two families cross their thresholds at the same time (thresholds in `services/market/config/sentiment.yaml`, tuned on real data, not guessed). Text alone never declares panic.
 - In the factor graph, sentiment links to the subject's **price**, not to its revenue or costs, with a short `lag_days`.
 
 ### Social data pipeline

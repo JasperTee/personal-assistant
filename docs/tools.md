@@ -81,7 +81,7 @@ Write the spec before coding each tool. The code (Pydantic schema + docstring) m
 
 ## Personas
 
-The actual config lives in `config/personas/*.yaml`.
+The actual config lives in `services/assistant/config/personas/*.yaml`.
 
 | Persona | Status | Tools | Proactive |
 | --- | --- | --- | --- |
