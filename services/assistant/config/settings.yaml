@@ -1,6 +1,11 @@
 # general settings — no secrets here (secrets live in .env)
 
 timezone: Australia/Sydney
+
+telegram:
+  webhook_listen: 0.0.0.0    # inside a container; the tunnel or proxy is the only public entry
+  webhook_port: 8080
+  webhook_path_prefix: /telegram   # one path per bot: /telegram/secretary (ADR-29)
 currency: AUD
 
 agent_loop:
@@ -23,13 +28,7 @@ pending_actions:
   expire_after_minutes: 60   # pending actions are cancelled automatically after this
 
 retention:
-  messages_months: 12
-  rental_months: 3           # invoices, meter-book photos, readings, detailed calculations
-
-rental:
-  invoices_dir: data/invoices   # data/invoices/2026-11/block-a/room-05.pdf
-  photos_dir: data/meter_photos
-  invoice_formats: [pdf, png]
+  messages_months: 12        # rental data retention lives in services/rental/config/settings.yaml
 
 proactive:
   quiet_hours: "23:00-07:00" # no proactive messages except urgent ones
