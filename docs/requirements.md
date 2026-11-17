@@ -16,7 +16,7 @@ A personal AI assistant system for Huy, used through Telegram, made of one **Sec
 | Gmail, Outlook | Email | Administrative assistant | Should |
 | Papers, lectures, images | Documents | Records manager | Should |
 | Study, career, deadlines | Learning & Career | Study and career adviser | Should |
-| Markets, economy | Market | Economist | Could |
+| Markets, economy | Market | Economist | **Must** (ADR-20) |
 | Scientific papers | Research | Scientist | Could |
 | Health, training | (inside Secretary) | Coach | Could |
 
@@ -117,6 +117,11 @@ Risk by RiskLevel: READ · WRITE_SELF · EXTERNAL · FORBIDDEN. Priority: Must �
 | MKT-04 | Read, filter and connect economic news | "How does this week's news affect the chip sector?" | READ | Could |
 | MKT-05 | Portfolio tracking (tracking only, no trading) | "How is my portfolio doing today?" | READ | Could |
 | MKT-06 | Upcoming earnings calendar | "Who reports earnings this week?" | READ | Could |
+| MKT-07 | Deep multi-factor analysis of a company or sector: causal chains across tiers 0–4, graded evidence, counter-evidence, scenarios with probabilities (docs/market-data.md) | "How will this year's La Niña affect hydropower stocks?" | READ | **Must** |
+| MKT-09 | Market-state check: is a move driven by fundamentals or by panic / euphoria (market data, search attention, press and social sentiment; ADR-22) | "Is VN-Index falling because of fear or because of earnings?" | READ | Should |
+| MKT-10 | Quantitative baselines: statistics / ML on past data feed the analysis as graded evidence (ADR-23) | "How did bank stocks react to past rate rises?" | READ | Should |
+| MKT-11 | Indicator trust by time and regime, from scored past results (ADR-24) | "Which indicators have been most reliable lately?" | READ | Should |
+| MKT-08 | Log every forecast and score it when its horizon passes | "How accurate were last quarter's forecasts?" | WRITE_SELF | **Must** |
 
 ### Research (SCI)
 
@@ -130,9 +135,11 @@ Risk by RiskLevel: READ · WRITE_SELF · EXTERNAL · FORBIDDEN. Priority: Must �
 
 ## MVP
 
-**Secretary** (SEC-01, 02, 03, 07) + **Rental** (RENT-01, 02, 03, 03b, 04).
+**Secretary** (SEC-01, 02, 03, 07) + **Rental** (RENT-01, 02, 03, 03b, 04) + **Market** (MKT-07, 08) — ADR-20.
 
 Done when: photograph the meter book → the bot reads it and asks about uncertain cells → Huy confirms the whole table → rent is calculated correctly for every room → PDF/PNG invoices are exported to `invoices/<year-month>/<block>/` → Huy sends them to tenants manually; data older than 3 months is deleted automatically; and reminders run reliably.
+
+Market is done when: for one sector with a written factor map, a deep analysis "as of" a date uses only data published before that date, every number in the reply comes from a cited evidence row, tier ≥ 2 evidence comes with a path to the subject, and the forecast is saved in `forecasts` with a horizon to score it.
 
 **Retention:** keep at most the last 3 months of invoice files, meter-book photos, readings and detailed calculation results. The latest month's readings are always kept as the "previous reading" for the next month. Tenant info, rooms and unit prices are not deleted by this rule.
 
@@ -151,7 +158,7 @@ Done when: photograph the meter book → the bot reads it and asks about uncerta
 
 | Item | Requirement |
 | --- | --- |
-| Cost | ≤ $15/month (MVP), ≤ $50/month (all areas); stop and notify when exceeded |
+| Cost | ≤ $15/month (MVP), ≤ $50/month (all areas); stop and notify when exceeded. The MVP limit is under review now that Market is in the MVP (ADR-20) |
 | Response time | Simple messages < 5 seconds; agent tasks < 30 seconds; photo reading + billing < 2 minutes |
 | Accuracy | Rent: 100% after Huy's confirmation step; no invoice is issued without approval |
 | Availability | 24/7 once on a server |

@@ -23,6 +23,12 @@ Status tags: no tag = solved; **(open)** = not solved yet.
 
 ---
 
+### 2026-11-13 — Market analysis had no data model (open — no sector or source chosen yet)
+- **Situation:** Market became part of the MVP with the goal of deep, multi-factor answers, but the plan only listed tools (`market.price`, `market.news`) and a prompt; nothing said how close a fact is to the subject, how far to trust it, or whether it was public at the time.
+- **Cause:** the area was planned as "fetch data, let the LLM analyse", which leads to single-source answers and vague conclusions.
+- **Fix:** five-axis data model (relevance tier from a factor graph, source reliability, information credibility, bronze/silver/gold, point-in-time), based on finance and intelligence-analysis research. ADR-20, ADR-21, docs/market-data.md.
+- **Lesson:** decide how data is graded and filtered before deciding which data to fetch.
+
 ### 2026-11-12 — Folder names didn't match Clean Architecture
 - **Situation:** the use-case ring was spread over `orchestration/`, `policy/` and `tools/` at the top level; `orchestration` is not a name Clean Architecture readers recognise.
 - **Cause:** folders were named after what each piece does, not after the ring it belongs to.
