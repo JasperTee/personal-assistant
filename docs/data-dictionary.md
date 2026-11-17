@@ -47,6 +47,8 @@ Kept for 12 months (settings.yaml); older messages are summarised, then deleted.
 
 ## reminders — phase 3 · Shared
 
+> Planned to move to the study app's planner (ADR-28); kept here until that design is written.
+
 | Column | Type | Meaning |
 | --- | --- | --- |
 | content | text | Reminder text |
