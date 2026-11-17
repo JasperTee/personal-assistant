@@ -217,7 +217,7 @@ One row per subject, family and time window. No personal data.
 | removed_count | int, nullable | Posts dropped by the bot / coordination filter |
 | negative_share, positive_share | decimal 0–1, nullable | Share of negative / positive items |
 | value_vs_norm | decimal | Deviation from the recent baseline (e.g. z-score) |
-| is_above_threshold | bool | Crossed its threshold in `config/market/sentiment.yaml` |
+| is_above_threshold | bool | Crossed its threshold in `services/market/config/sentiment.yaml` |
 | published_at | datetime | End of window — point-in-time key |
 
 ### model_runs — ADR-23 (proposed)
@@ -239,7 +239,7 @@ One row per subject, family and time window. No personal data.
 | Column | Type | Meaning |
 | --- | --- | --- |
 | indicator | string | Indicator, sentiment family or model name |
-| regime | string | Regime id defined in `config/market/indicator_trust.yaml` |
+| regime | string | Regime id defined in `services/market/config/indicator_trust.yaml` |
 | horizon_days | int | Forecast horizon |
 | scored_count | int | Past calls scored in this regime and horizon |
 | score | decimal | Decayed average score (e.g. Brier) |

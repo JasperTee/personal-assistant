@@ -4,18 +4,18 @@ Two layers: **unit tests** (fast, use a fake LLM, cost nothing) and **evals** (r
 
 ## Unit tests — `tests/`
 
-`tests/` mirrors `src/assistant/`: the test for `src/assistant/application/policy/guard.py` is `tests/application/policy/test_guard.py`. Inside a file, tests are grouped in a `Test<ClassName>` class. Shared fixtures go in `tests/conftest.py`.
+Each service has its own `tests/` that mirrors its `src/<service>/`: the test for `services/assistant/src/assistant/application/policy/guard.py` is `services/assistant/tests/application/policy/test_guard.py`. Paths in the table are inside `services/assistant/tests/` unless they name another service. Inside a file, tests are grouped in a `Test<ClassName>` class. Shared fixtures go in `tests/conftest.py`.
 
 | File | Checks | From phase |
 | --- | --- | --- |
 | domain/test_models.py | Contracts reject wrong types, are frozen, have the right defaults | 1 |
-| channels/telegram/test_controller.py | Sample Telegram JSON → `IncomingMessage` with the right persona and time | 1 |
-| channels/telegram/test_presenter.py | Long replies split; pending actions get Send/Cancel buttons | 1 |
+| entrypoints/telegram/test_controller.py | Sample Telegram JSON → `IncomingMessage` with the right persona and time | 1 |
+| entrypoints/telegram/test_presenter.py | Long replies split; pending actions get Send/Cancel buttons | 1 |
 | application/policy/test_access.py | Strangers blocked; each persona gets only its tools | 3 |
 | application/policy/test_guard.py | EXTERNAL awaits approval; FORBIDDEN rejected; bad values blocked | 3 |
 | application/tools/reminders/test_create.py | A past `remind_at` → `is_error` + the rule as hint | 3 |
 | application/test_agent_loop.py | Stops when out of iterations; a predictable tool error returns a hint, an unexpected one doesn't crash the loop; missing parameters → ask back | 2–3 |
-| domain/rental/test_billing.py | Readings × unit prices → the right bill for every room | MVP |
+| services/rental/tests/domain/test_billing.py | Readings × unit prices → the right bill for every room | MVP |
 
 Run before every commit, together with `ruff check .` and `lint-imports`.
 

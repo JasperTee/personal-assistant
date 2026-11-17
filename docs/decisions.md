@@ -12,7 +12,7 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 | ADR-06 | Policy layer in code, RiskLevel classification | Accepted | 2026-11-09 |
 | ADR-07 | Routing before the agent loop | Accepted | 2026-11-09 |
 | ADR-08 | Secretary + specialist bots (hub-and-spoke) | Accepted | 2026-11-09 |
-| ADR-09 | One database: SQLite → PostgreSQL | Accepted | 2026-11-09 |
+| ADR-09 | One database: SQLite → PostgreSQL | Superseded by ADR-25 (one database per service) | 2026-11-09 |
 | ADR-10 | Write our own agent loop, no framework yet | Accepted | 2026-11-09 |
 | ADR-11 | Run locally during development, AWS VPS once stable | Accepted | 2026-11-09 |
 | ADR-12 | Invoices are only exported to a folder, not sent via Zalo | Accepted | 2026-11-11 |
@@ -22,12 +22,14 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 | ADR-16 | Clean Architecture for the system, MVC only in channels; folders by layer, then area | Accepted | 2026-11-11 |
 | ADR-17 | LLM input preprocessing (normalised + original text); verify with evals | Accepted | 2026-11-12 |
 | ADR-18 | Branches, pull requests and a protected `main` | Accepted | 2026-11-12 |
-| ADR-19 | Use cases live in `application/` | Accepted | 2026-11-12 |
+| ADR-19 | Use cases live in `application/` | Accepted; folder name `channels/` superseded by ADR-26 (`entrypoints/`) | 2026-11-12 |
 | ADR-20 | Market analysis joins the MVP (Secretary + Rental + Market) | Accepted | 2026-11-13 |
 | ADR-21 | Five-axis data model for market evidence | Accepted | 2026-11-13 |
 | ADR-22 | Sentiment and panic as a separate market-state signal | Accepted | 2026-11-13 |
 | ADR-23 | Quantitative layer: statistics and ML on past data, agents interpret and challenge | Proposed | 2026-11-13 |
 | ADR-24 | Indicator trust that changes over time and by regime, earned from past results | Proposed | 2026-11-13 |
+| ADR-25 | Microservices split by business area: assistant, rental, market, finance | Accepted | 2026-11-18 |
+| ADR-26 | Monorepo with one folder per service under `services/` | Accepted | 2026-11-18 |
 
 ---
 
@@ -280,3 +282,32 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 - **Why:** forecasting relations are unstable over time (Stock & Watson), and time-varying weights improved S&P 500 forecasts with economic gains (Ravazzolo et al.); but estimated weights are noisy and equal weights often win (forecast combination puzzle, Smith & Wallis), so trust must be earned slowly.
 - **Trade-offs:** needs many scored calls before scores mean much; regime definitions are a judgement that must stay small and fixed in advance.
 - **Status:** Proposed — same reason as ADR-23.
+
+## ADR-25 — Microservices split by business area: assistant, rental, market, finance
+
+- **Context:** everything lived in one `assistant` package. Huy wants Rental (and later Market and Finance) to stand on their own: usable from other clients such as a billing website, able to scale on their own, and able to join a bigger system instead of being one closed app. He also wants a strong business-logic structure to show in interviews.
+- **Options:** (a) keep one app; (b) a modular monolith, split later; (c) microservices now.
+- **Chosen:** (c). Claude advised (b) first; Huy chose (c), knowing the extra work.
+  - **Split by business area, not by layer.** `assistant`: Telegram, pipeline, LLM, personas, policy, chat memory, API cost, reminders and to-dos. `rental`: rooms, tenants, meter readings, bills, invoices, the 3-month clean-up (ADR-13). `market`: market data, graded evidence, forecasts and scores (ADR-20 to ADR-24). `finance`: expenses, budgets, reports (FIN-*). Later: `rental-web` (website for billing), `identity` (sign-in).
+  - **When something becomes a service:** it has its own data, its own business rules, and a reason to stand alone (another client, its own scaling or schedule). Otherwise it stays a module in `assistant`; this is why reminders and to-dos stay there for now.
+  - **One-way calls:** `assistant` calls the other services; they never call `assistant`. No service imports another service's code (import-linter contracts in every `pyproject.toml`).
+  - **One database per service:** one PostgreSQL server later, with its own database and user per service; no joins across services, ids are UUIDs. This replaces the single database of ADR-09.
+  - **Between services: gRPC** with versioned contracts in `proto/` (rules in a later ADR); REST/JSON only at the edge (websites).
+  - **The LLM stays in `assistant`:** for example the meter photo (RENT-01) is read by the assistant's LLM; `rental` only receives the table of numbers.
+- **Why:** it matches Huy's goal (independent, integrable services) and makes each area's business rules stand alone and easy to test.
+- **Trade-offs:** network calls that can fail or time out, several processes to run and deploy, contracts to version, data spread over several databases, and more set-up before the first feature works.
+
+## ADR-26 — Monorepo with one folder per service under `services/`
+
+- **Context:** ADR-25 needs a place for several services.
+- **Options:** (a) one repository per service; (b) one repository (monorepo) with a folder per service.
+- **Chosen:** (b).
+  - `services/<name>/` holds that service's `pyproject.toml`, `src/<name>/`, `tests/`, and if it has them `config/`, `data/`, `migrations/`, `.env.example` (later its `Dockerfile`). `docs/` and `.github/` stay at the root; `proto/` is added at the root with the first contract.
+  - `assistant` keeps Clean Architecture inside (ADR-16, ADR-19). `rental`, `market` and `finance` follow Domain-Driven Design ("Architecture Patterns with Python"): `domain/` first, then `application/`, `infrastructure/`, `entrypoints/` as they are written; their layer contracts are added together with `application/`.
+  - Paths moved: `src/assistant/` → `services/assistant/src/assistant/`; `domain/rental/` → `services/rental/src/rental/domain/`; `domain/market/` and `config/market/` → `services/market/`. Older ADRs keep the old paths as history.
+  - **CI:** one job per service (matrix) runs `ruff check .`, `lint-imports` and `pytest` inside its folder; a summary job keeps the name `checks`, the required check on `main` (ADR-18). Later: run only the services a PR changes.
+  - **Same rings everywhere:** `domain/`, `application/`, `infrastructure/`, `entrypoints/`, `main.py` in every Python service, mapped one to one to `<App>.Domain / .Application / .Infrastructure / .Api|.Web / Program.cs` in the .NET study app (docs/conventions.md §9). So `assistant`'s `channels/` is renamed `entrypoints/` (`entrypoints/telegram/`, `entrypoints/scheduler/`); this replaces the folder-name choice in ADR-19, and "channel" stays the word for Telegram, Teams and the scheduler inside it.
+  - **Local:** one `.venv` at the root with every service installed in editable mode; run the tools inside the service folder.
+- **Why:** one PR can change a contract and both sides at once, one CI file, simple for a solo owner, and the history stays in one place. A service can still be split into its own repository later (`git filter-repo`).
+- **Trade-offs:** CI runs every service on every PR until path filters are added; keeping services apart depends on the import-linter contracts, not on separate repositories.
+

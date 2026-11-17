@@ -13,9 +13,9 @@ Use when the bot behaves strangely, costs spike, or a key may have leaked.
 
 ## Running locally (phases 1–3)
 
-1. Create a Python 3.12+ virtualenv and install the dependencies from `pyproject.toml`.
-2. Copy `.env.example` → `.env`, fill in the tokens and `OWNER_TELEGRAM_ID`.
-3. Run the Alembic migrations to create the tables in `data/assistant.db`.
+1. Create a Python 3.12+ virtualenv at the repo root and install each service from its `services/<name>/pyproject.toml` (commands in README.md).
+2. Copy `services/assistant/.env.example` → `services/assistant/.env`, fill in the tokens and `OWNER_TELEGRAM_ID`.
+3. Run the Alembic migrations to create the tables in `services/assistant/data/assistant.db`.
 4. Run the bot in polling mode (no webhook needed locally).
 5. Message the bot on Telegram; check the rows in `messages` and `run_logs`.
 

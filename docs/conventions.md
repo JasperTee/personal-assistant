@@ -95,27 +95,56 @@ Async functions are named like sync ones (no `_async` suffix).
 - English only (ADR-14), no abbreviations except well-known ones: `id`, `url`, `db`, `llm`, `ms`.
 - Use the project's words consistently: **persona** (not bot/agent in code), **tool** (not function/skill), **run** (one pass through the pipeline), **owner** (Huy), **tenant**.
 
-## 9. Structure (ADR-16, ADR-19)
+## 9. Structure (ADR-16, ADR-19, ADR-25, ADR-26)
 
-Layer first, then area. The path tells you the layer and the job:
+Services first: `services/<name>/` (`assistant`, `rental`, `market`, `finance`). A service never imports another service's package; import-linter checks it.
+
+Inside `services/assistant/src/assistant/`: layer first, then area. The path tells you the layer and the job:
 
 | What | Path | Example |
 | --- | --- | --- |
 | Data contract shared by all | `domain/models.py` | `ToolCall` |
-| Area business rules (pure code) | `domain/<area>/` | `domain/rental/billing.py` |
+| Business rules of another area | its own service, `src/<service>/domain/` | `services/rental/src/rental/domain/billing.py` |
 | Interface (Protocol) | `domain/ports.py` | `LLMProvider` |
-| Channel input (MVC controller) | `channels/<channel>/controller.py` | `TelegramController` |
-| Channel output (MVC view) | `channels/<channel>/presenter.py` | `TelegramPresenter` |
+| Channel input (MVC controller) | `entrypoints/<channel>/controller.py` | `TelegramController` |
+| Channel output (MVC view) | `entrypoints/<channel>/presenter.py` | `TelegramPresenter` |
 | Use case (pipeline step) | `application/<step>.py` | `application/pipeline.py` → `Pipeline` |
 | Policy (rules) | `application/policy/<rule>.py` | `application/policy/guard.py` |
 | Tool | `application/tools/<area>/<verb>.py` — same as the tool name | `reminders.create` → `application/tools/reminders/create.py` |
 | Port implementation | `infrastructure/<kind>/<technology>.py` | `infrastructure/llm/claude.py` → `ClaudeLLMProvider` |
 
-Import only downwards: `main` → `channels | infrastructure` → `application` → `domain`. Inside `application/`: `pipeline` → `agent_loop | context_builder | postprocess | router` → `policy | tools`. `lint-imports` fails the check otherwise.
+Import only downwards: `main` → `entrypoints | infrastructure` → `application` → `domain`. Inside `application/`: `pipeline` → `agent_loop | context_builder | postprocess | router` → `policy | tools`. `lint-imports` fails the check otherwise.
+
+### Same rings in every service and both languages (ADR-26)
+
+Every service, in this repository and in the study app (.NET, its own repository), has the same four rings and the same composition root. Inside one language the names are identical; across languages they map one to one.
+
+| Ring | Python service (`services/<name>/src/<name>/`) | .NET project (`src/<App>.<Ring>/`) |
+| --- | --- | --- |
+| Entities, business rules | `domain/` | `<App>.Domain` |
+| Use cases, ports | `application/` | `<App>.Application` |
+| Database, LLM, files, other services' clients | `infrastructure/` | `<App>.Infrastructure` |
+| Ways in: Telegram, scheduler, gRPC server, HTTP | `entrypoints/<channel>/` | `<App>.Api` (HTTP, gRPC) or `<App>.Web` (MVC, SignalR) |
+| Composition root | `main.py` | `Program.cs` in `<App>.Api` / `<App>.Web` |
+
+- Dependencies point inward only; a test in CI enforces it (import-linter in Python, an architecture test such as NetArchTest in .NET).
+- Inside a ring: layer first, then area (`application/tools/reminders/create.py` ↔ `Application/Reminders/CreateReminder.cs`).
+- Tests mirror the source tree (`tests/application/...` ↔ `tests/<App>.Application.Tests/...`).
+- Same words and naming rules (§8, `id`, `<class>_id`, `is_`, unit suffixes), each language's own casing in code, because each linter enforces its own (PEP 8 via Ruff `N`; .NET naming rules via IDE1006): `tenant_id`, `is_active`, `amount_vnd` ↔ `TenantId`, `IsActive`, `AmountVnd`.
+- Where data crosses languages, one casing for everyone; the tools convert to each language's casing:
+
+  | Place | Casing | Example |
+  | --- | --- | --- |
+  | `.proto` fields (gRPC) | `snake_case` (Buf / Google style); generated code becomes `tenant_id` in Python, `TenantId` in C# | `tenant_id` |
+  | Database columns | `snake_case` (PostgreSQL habit); EF Core uses a snake_case naming convention | `tenant_id` |
+  | JSON at the edge (REST, web) | `camelCase` (Google JSON style, ASP.NET Core default) | `tenantId` |
+- Same data rules: ids are UUIDs, times stored in UTC, every table has `id` and `created_at`, schema changes only through migrations (Alembic ↔ EF Core migrations), one database per service.
+- Same process: §11 commits, §13 branches and pull requests, a required `checks` CI job, the same `docs/` set (README, CHANGELOG, decisions, devlog, conventions, requirements, data dictionary, threat model, runbook).
+- When the study app repository is created, copy this file there and keep both copies in step.
 
 ## 10. Tests
 
-- `tests/` mirrors `src/assistant/`: `src/assistant/application/policy/guard.py` → `tests/application/policy/test_guard.py`.
+- Each service's `tests/` mirrors its `src/<service>/`: `services/assistant/src/assistant/application/policy/guard.py` → `services/assistant/tests/application/policy/test_guard.py`.
 - One `Test<ClassName>` class per class under test; test names say the behaviour: `test_<what>_<expected>`, e.g. `test_tool_call_rejects_wrong_types`.
 - Shared fixtures in `tests/conftest.py`; no `__init__.py` in `tests/`.
 
@@ -125,7 +154,7 @@ Import only downwards: `main` → `channels | infrastructure` → `application` 
 [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <summary>`.
 
 - `summary`: imperative, lower case, no final period, ≤ 72 characters — "add reminder tool", not "Added reminder tool."
-- `scope` (optional): the layer or area touched — `domain`, `channels`, `application`, `policy`, `tools`, `infrastructure`, `config`, `docs`, or an area such as `rental`, `reminders`.
+- `scope` (optional): the layer or area touched — `domain`, `entrypoints`, `application`, `policy`, `tools`, `infrastructure`, `config`, `docs`, or an area such as `rental`, `reminders`.
 
 | Type | Use for | Example |
 | --- | --- | --- |

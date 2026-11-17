@@ -23,6 +23,12 @@ Status tags: no tag = solved; **(open)** = not solved yet.
 
 ---
 
+### 2026-11-18 — One app could not grow into a bigger system
+- **Situation:** Rental, Market and Finance all lived inside the `assistant` package; a billing website or another app could not use the rental rules without the Telegram bot.
+- **Cause:** the project started as one bot, so every area was added as a folder of that bot.
+- **Fix:** split by business area into services in one monorepo (ADR-25, ADR-26); `assistant` calls the others, never the other way round.
+- **Lesson:** decide who owns which data and rules before writing the business code.
+
 ### 2026-11-13 — Market analysis had no data model (open — no sector or source chosen yet)
 - **Situation:** Market became part of the MVP with the goal of deep, multi-factor answers, but the plan only listed tools (`market.price`, `market.news`) and a prompt; nothing said how close a fact is to the subject, how far to trust it, or whether it was public at the time.
 - **Cause:** the area was planned as "fetch data, let the LLM analyse", which leads to single-source answers and vague conclusions.
