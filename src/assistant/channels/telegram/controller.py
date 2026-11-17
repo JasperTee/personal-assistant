@@ -32,4 +32,6 @@ class TelegramController:
         """Called by python-telegram-bot for each text message: parse, run, reply."""
         message = self.parse_message(update)
         reply = await self._pipeline.run(message)
+        if reply is None:
+            return
         await self._presenter.send_reply(context.bot, update.effective_chat.id, reply)

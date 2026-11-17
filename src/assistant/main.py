@@ -7,6 +7,7 @@ domain/ports.py.
 from telegram.ext import Application, MessageHandler, filters
 
 from assistant.application.pipeline import Pipeline
+from assistant.application.policy.access import AccessPolicy
 from assistant.channels.telegram.controller import TelegramController
 from assistant.channels.telegram.presenter import TelegramPresenter
 from assistant.infrastructure.config import load_settings
@@ -17,7 +18,9 @@ def main() -> None:
     """Wire the Secretary bot with the fake LLM and start polling Telegram."""
     settings = load_settings()
 
-    pipeline = Pipeline(FakeLLMProvider())  # phase 2: ClaudeLLMProvider
+    access_policy = AccessPolicy(str(settings.owner_telegram_id))
+
+    pipeline = Pipeline(FakeLLMProvider(), access_policy)  # phase 2: ClaudeLLMProvider
     controller = TelegramController(
         persona="secretary",
         pipeline=pipeline,
@@ -25,10 +28,8 @@ def main() -> None:
     )
 
     application = Application.builder().token(settings.telegram_token_secretary).build()
-    only_owner_text = (
-        filters.TEXT & ~filters.COMMAND & filters.User(user_id=settings.owner_telegram_id)
-    )
-    application.add_handler(MessageHandler(only_owner_text, controller.handle_message))
+    only_text = filters.TEXT & ~filters.COMMAND
+    application.add_handler(MessageHandler(only_text, controller.handle_message))
     application.run_polling()  # asks Telegram for new messages until Ctrl+C
 
 
