@@ -16,7 +16,7 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 | ADR-10 | Write our own agent loop, no framework yet | Accepted | 2026-11-09 |
 | ADR-11 | Run locally during development, AWS VPS once stable | Accepted | 2026-11-09 |
 | ADR-12 | Invoices are only exported to a folder, not sent via Zalo | Accepted | 2026-11-11 |
-| ADR-13 | Detailed rental data is kept for 3 months only | Accepted | 2026-11-11 |
+| ADR-13 | Detailed rental data is kept for 3 months only | Superseded by ADR-27 | 2026-11-11 |
 | ADR-14 | English for all project text | Accepted | 2026-11-11 |
 | ADR-15 | Scheduled runs: read → select → verify → dedupe → send → confirm → commit | Proposed (phase 5) | 2026-11-11 |
 | ADR-16 | Clean Architecture for the system, MVC only in channels; folders by layer, then area | Accepted | 2026-11-11 |
@@ -28,8 +28,11 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 | ADR-22 | Sentiment and panic as a separate market-state signal | Accepted | 2026-11-13 |
 | ADR-23 | Quantitative layer: statistics and ML on past data, agents interpret and challenge | Proposed | 2026-11-13 |
 | ADR-24 | Indicator trust that changes over time and by regime, earned from past results | Proposed | 2026-11-13 |
-| ADR-25 | Microservices split by business area: assistant, rental, market, finance | Accepted | 2026-11-18 |
+| ADR-25 | Microservices split by business area: assistant, rental, market, finance | Accepted; reminders and to-dos moved by ADR-28 | 2026-11-18 |
 | ADR-26 | Monorepo with one folder per service under `services/` | Accepted | 2026-11-18 |
+| ADR-27 | Rental keeps readings and bills for 12 months, meter-book photos for 3 | Accepted | 2026-11-18 |
+| ADR-28 | The planner belongs to the study app (own repository, .NET); the assistant is its client | Accepted | 2026-11-18 |
+| ADR-29 | Telegram webhook in every environment, ready for several replicas | Accepted | 2026-11-18 |
 
 ---
 
@@ -117,6 +120,8 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 - **Revisit:** once invoices have been consistently correct for 2–3 months. With a business registration + ID, ZNS is feasible: only a sending adapter is needed, the billing part stays the same.
 
 ## ADR-13 — Detailed rental data is kept for 3 months only
+
+> Superseded by ADR-27.
 
 - **Chosen:** invoice files, meter-book photos, readings and detailed calculation results older than 3 months are deleted automatically at the start of each month.
 - **Why:** tidy, and less of other people's sensitive data to protect; 3 months is enough to check back when a tenant has a question.
@@ -288,8 +293,8 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 - **Context:** everything lived in one `assistant` package. Huy wants Rental (and later Market and Finance) to stand on their own: usable from other clients such as a billing website, able to scale on their own, and able to join a bigger system instead of being one closed app. He also wants a strong business-logic structure to show in interviews.
 - **Options:** (a) keep one app; (b) a modular monolith, split later; (c) microservices now.
 - **Chosen:** (c). Claude advised (b) first; Huy chose (c), knowing the extra work.
-  - **Split by business area, not by layer.** `assistant`: Telegram, pipeline, LLM, personas, policy, chat memory, API cost, reminders and to-dos. `rental`: rooms, tenants, meter readings, bills, invoices, the 3-month clean-up (ADR-13). `market`: market data, graded evidence, forecasts and scores (ADR-20 to ADR-24). `finance`: expenses, budgets, reports (FIN-*). Later: `rental-web` (website for billing), `identity` (sign-in).
-  - **When something becomes a service:** it has its own data, its own business rules, and a reason to stand alone (another client, its own scaling or schedule). Otherwise it stays a module in `assistant`; this is why reminders and to-dos stay there for now.
+  - **Split by business area, not by layer.** `assistant`: Telegram, pipeline, LLM, personas, policy, chat memory, API cost, and at first reminders and to-dos (moved to the study app by ADR-28). `rental`: rooms, tenants, meter readings, bills, invoices, the 3-month clean-up (ADR-13). `market`: market data, graded evidence, forecasts and scores (ADR-20 to ADR-24). `finance`: expenses, budgets, reports (FIN-*). Later: `rental-web` (website for billing), `identity` (sign-in).
+  - **When something becomes a service:** it has its own data, its own business rules, and a reason to stand alone (another client, its own scaling or schedule). Otherwise it stays a module in `assistant`; this is why reminders and to-dos first stayed there (later ADR-28).
   - **One-way calls:** `assistant` calls the other services; they never call `assistant`. No service imports another service's code (import-linter contracts in every `pyproject.toml`).
   - **One database per service:** one PostgreSQL server later, with its own database and user per service; no joins across services, ids are UUIDs. This replaces the single database of ADR-09.
   - **Between services: gRPC** with versioned contracts in `proto/` (rules in a later ADR); REST/JSON only at the edge (websites).
@@ -310,4 +315,49 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
   - **Local:** one `.venv` at the root with every service installed in editable mode; run the tools inside the service folder.
 - **Why:** one PR can change a contract and both sides at once, one CI file, simple for a solo owner, and the history stays in one place. A service can still be split into its own repository later (`git filter-repo`).
 - **Trade-offs:** CI runs every service on every PR until path filters are added; keeping services apart depends on the import-linter contracts, not on separate repositories.
+
+## ADR-27 — Rental keeps readings and bills for 12 months, meter-book photos for 3
+
+- **Context:** ADR-13 deleted every detail older than 3 months. Leases run 6 to 12 months, so a deposit question at move-out can need readings from much earlier; RENT-10 (income by quarter and year) and year-end records need a full year; and the meter-book photos are the most personal part of the data.
+- **Options:** (a) keep 3 months for everything (ADR-13); (b) keep 12 months for everything; (c) 12 months for readings, invoices and calculation results, 3 months for meter-book photos.
+- **Chosen:** (c).
+  - Kept 12 months: invoice files, confirmed readings, detailed calculation results.
+  - Kept 3 months: meter-book photos. Once Huy has confirmed the table of numbers (RENT-01), the confirmed readings are the record; the photo is only a backup check.
+  - Never deleted by this rule: tenant details, rooms, unit prices, and the latest month's readings (the "previous reading" for next month).
+  - Run by the `rental` service (ADR-25) as a scheduled job in plain code at the start of each month; it logs how many rows and files it deleted. The LLM has no delete tool (FORBIDDEN).
+  - Settings: `retention.details_months: 12` and `retention.meter_photos_months: 3` in `services/rental/config/settings.yaml`.
+  - Backups follow the same limit: a backup is deleted after at most 12 months, so data removed from the database does not live on in old backups.
+- **Why:** a full year covers a whole lease and a whole tax year; photos go early because they carry the most personal detail and are no longer needed once the numbers are confirmed.
+- **Trade-offs:** four times as long a window of tenants' data to protect (access rules, encryption at rest when deployed); a dispute about a photo older than 3 months can only be checked against the confirmed numbers.
+
+## ADR-28 — The planner belongs to the study app (own repository, .NET); the assistant is its client
+
+- **Context:** reminders, to-dos, calendar, study deadlines, exams and habits ("the planner") were planned inside `assistant` (SEC-02, 03, 04, 08; EDU-01, 02). Huy's second project, a study web app (.NET, many users, deployed on AWS), has deadlines, exams and an AI study schedule as its MVP, and will grow into managing a student's life. Both would need the same planner data.
+- **Options:** (a) keep the planner as a module in `assistant`; (b) `services/planner/` in this monorepo; (c) the study app owns the planner, in its own repository, and `assistant` calls it.
+- **Chosen:** (c).
+  - The study app is a separate product (its own users, sign-in, .NET tooling, security scans, AWS deployment), so it gets its own repository; the four services here stay in this monorepo (ADR-26).
+  - The study app owns the planner data and its gRPC contract (`.proto`); `assistant` copies the contract and keeps thin tools (`reminders.*`, later `todos.*`, `deadlines.*`) that call it.
+  - Calls go one way: `assistant` → study app. When a reminder is due, the study app publishes an event (or, at first, `assistant` asks every minute for due reminders) and `assistant` sends the Telegram message.
+  - `assistant` acts on Huy's behalf in the study app through its sign-in (OAuth, designed with the identity work); every planner row has a `user_id` from day one because the study app has many users.
+  - Both repositories follow the same structure and naming (docs/conventions.md §9).
+  - **MVP:** reminders and to-dos (SEC-02, 03) leave the assistant MVP; they arrive when the study app's planner exists. The assistant MVP is SEC-01, 07 + Rental + Market.
+- **Why:** one planner for the bot and the web app instead of two copies of the same data; the study app's MVP already covers it; a Python bot calling a .NET service in another repository through a versioned contract is the integration Huy wants to show.
+- **Trade-offs:** no reminders in the bot until the study app's planner is built; a change that needs both sides takes two pull requests (server first, then client); the bot depends on the study app being up, so the tools must fail gracefully ("can't reach the planner, try again later").
+
+## ADR-29 — Telegram webhook in every environment, ready for several replicas
+
+- **Context:** the bot asks Telegram for new messages (`run_polling()`). Only one process can poll a bot, so `assistant` could never run more than one copy, and the server setup (tunnel, HTTPS) would first be tested only at deployment.
+- **Options:** (a) keep polling; (b) polling on the laptop, webhook on the server, chosen by a setting; (c) webhook everywhere.
+- **Chosen:** (c). Telegram sends each update as an HTTPS POST to the bot (`run_webhook()` of python-telegram-bot, `python-telegram-bot[webhooks]`).
+  - **One path per bot:** `/telegram/<persona>` (e.g. `/telegram/secretary`), on one port; the public base URL comes from `TELEGRAM_WEBHOOK_BASE_URL`.
+  - **Secret header:** the webhook is registered with `TELEGRAM_WEBHOOK_SECRET`; Telegram sends it in `X-Telegram-Bot-Api-Secret-Token` and any request without it is rejected, so nobody can pretend to be Telegram.
+  - **Laptop:** a temporary tunnel gives a public HTTPS URL (`cloudflared tunnel --url http://localhost:8080`, no account needed); a separate **dev bot** from BotFather, because a bot with a webhook cannot be polled and the real bot must not receive test traffic.
+  - **Server:** the same code behind the server's tunnel and HTTPS; only `.env` differs.
+- **Ready for several replicas** (rules for the code that follows):
+  - no conversation state in memory: history, memory and pending actions live in the database;
+  - **idempotent updates:** Telegram can send an update again, so the processed `update_id`s are stored and a repeat is skipped;
+  - **one scheduler:** scheduled jobs take a database lock so only one replica runs each job (ADR-15);
+  - answer Telegram quickly (within seconds); long work continues after the reply is acknowledged.
+- **Why:** dev and server run the same way (dev/prod parity), webhook problems show up on the laptop, and the bot can scale out behind a load balancer.
+- **Trade-offs:** a tunnel must be running for every local run; two bots to manage; the bot is reachable from the internet, so the secret header and the owner check (`AccessPolicy`) both matter.
 

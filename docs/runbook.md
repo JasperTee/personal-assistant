@@ -14,17 +14,18 @@ Use when the bot behaves strangely, costs spike, or a key may have leaked.
 ## Running locally (phases 1–3)
 
 1. Create a Python 3.12+ virtualenv at the repo root and install each service from its `services/<name>/pyproject.toml` (commands in README.md).
-2. Copy `services/assistant/.env.example` → `services/assistant/.env`, fill in the tokens and `OWNER_TELEGRAM_ID`.
+2. Copy `services/assistant/.env.example` → `services/assistant/.env`, fill in the **dev bot** token, `OWNER_TELEGRAM_ID` and a long random `TELEGRAM_WEBHOOK_SECRET` (e.g. `python -c "import secrets; print(secrets.token_urlsafe(32))"`).
 3. Run the Alembic migrations to create the tables in `services/assistant/data/assistant.db`.
-4. Run the bot in polling mode (no webhook needed locally).
-5. Message the bot on Telegram; check the rows in `messages` and `run_logs`.
+4. Start a tunnel in a second terminal: `cloudflared tunnel --url http://localhost:8080`; put the `https://….trycloudflare.com` URL it prints into `TELEGRAM_WEBHOOK_BASE_URL` (it changes every time).
+5. Start the bot (webhook, ADR-29): `python -m assistant.main`; it registers `<base URL>/telegram/secretary` with Telegram.
+6. Message the dev bot on Telegram; check the rows in `messages` and `run_logs`.
 
 ## Deploying to a server *(write this when we get there)*
 
 - [ ] Create a 1–2 GB RAM AWS VPS; open only SSH and HTTPS.
 - [ ] Install Python, create a dedicated user for the bot (never run as root).
 - [ ] Put `.env` on the server (never copy it through Git).
-- [ ] Switch to a webhook with `TELEGRAM_WEBHOOK_SECRET`.
+- [ ] Point `TELEGRAM_WEBHOOK_BASE_URL` at the server's public HTTPS address (tunnel); real bot token and its own `TELEGRAM_WEBHOOK_SECRET`.
 - [ ] Run the bot as a service that restarts on failure.
 - [ ] Move SQLite → PostgreSQL when needed (ADR-09).
 

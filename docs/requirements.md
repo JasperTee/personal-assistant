@@ -34,6 +34,8 @@ Risk by RiskLevel: READ · WRITE_SELF · EXTERNAL · FORBIDDEN. Priority: Must �
 
 ### Secretary (SEC)
 
+SEC-02, 03, 04 and 08 are planner features owned by the study app (ADR-28); the assistant becomes their client once the study app's planner exists.
+
 | ID | Use case | Example message | Risk | Priority |
 | --- | --- | --- | --- | --- |
 | SEC-01 | Chat with context | "What did I say about the gym yesterday?" | READ | Must |
@@ -52,7 +54,7 @@ Risk by RiskLevel: READ · WRITE_SELF · EXTERNAL · FORBIDDEN. Priority: Must �
 | RENT-01 | Read a photo of a handwritten meter list (electricity, water…) → text; ask back about uncertain cells | (sends a photo) | WRITE_SELF | **Must** |
 | RENT-02 | Calculate rent from unit prices and readings | "Calculate November's rent for block A" | WRITE_SELF | **Must** |
 | RENT-03 | Export a PDF/PNG invoice for each room, saved to a folder by month / block | "Export November's invoices" | WRITE_SELF | **Must** |
-| RENT-03b | Automatically delete invoices and detailed data older than 3 months | (automatic, start of each month) | WRITE_SELF (code, not via the LLM) | **Must** |
+| RENT-03b | Automatically delete invoices and detailed data older than 12 months, meter-book photos older than 3 months (ADR-27) | (automatic, start of each month) | WRITE_SELF (code, not via the LLM) | **Must** |
 | RENT-04 | Manage tenants (details, room, contact) | "Who is in room 5, block B?" | READ / WRITE_SELF | **Must** |
 | RENT-05 | Manage leases; warn before they expire | "Which leases expire within 30 days?" | READ | Should |
 | RENT-06 | Move-out / move-in (check-in, check-out, deposit, final readings) | "Room 3 moves out on the 30th" | WRITE_SELF | Should |
@@ -95,6 +97,8 @@ Risk by RiskLevel: READ · WRITE_SELF · EXTERNAL · FORBIDDEN. Priority: Must �
 
 ### Learning & Career (EDU / CAR)
 
+EDU-01 and 02 are planner features owned by the study app (ADR-28).
+
 | ID | Use case | Example message | Risk | Priority |
 | --- | --- | --- | --- | --- |
 | EDU-01 | Manage assignment and exam deadlines; remind in advance | "Any deadlines this week?" | WRITE_SELF | Should |
@@ -135,13 +139,13 @@ Risk by RiskLevel: READ · WRITE_SELF · EXTERNAL · FORBIDDEN. Priority: Must �
 
 ## MVP
 
-**Secretary** (SEC-01, 02, 03, 07) + **Rental** (RENT-01, 02, 03, 03b, 04) + **Market** (MKT-07, 08) — ADR-20.
+**Secretary** (SEC-01, 07) + **Rental** (RENT-01, 02, 03, 03b, 04) + **Market** (MKT-07, 08) — ADR-20. Reminders and to-dos (SEC-02, 03) come with the study app's planner (ADR-28).
 
-Done when: photograph the meter book → the bot reads it and asks about uncertain cells → Huy confirms the whole table → rent is calculated correctly for every room → PDF/PNG invoices are exported to `invoices/<year-month>/<block>/` → Huy sends them to tenants manually; data older than 3 months is deleted automatically; and reminders run reliably.
+Done when: photograph the meter book → the bot reads it and asks about uncertain cells → Huy confirms the whole table → rent is calculated correctly for every room → PDF/PNG invoices are exported to `invoices/<year-month>/<block>/` → Huy sends them to tenants manually; details older than 12 months and photos older than 3 months are deleted automatically.
 
 Market is done when: for one sector with a written factor map, a deep analysis "as of" a date uses only data published before that date, every number in the reply comes from a cited evidence row, tier ≥ 2 evidence comes with a path to the subject, and the forecast is saved in `forecasts` with a horizon to score it.
 
-**Retention:** keep at most the last 3 months of invoice files, meter-book photos, readings and detailed calculation results. The latest month's readings are always kept as the "previous reading" for the next month. Tenant info, rooms and unit prices are not deleted by this rule.
+**Retention (ADR-27):** keep at most the last 12 months of invoice files, readings and detailed calculation results, and the last 3 months of meter-book photos. The latest month's readings are always kept as the "previous reading" for the next month. Tenant info, rooms and unit prices are not deleted by this rule.
 
 ## Out of scope
 
