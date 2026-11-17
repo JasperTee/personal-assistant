@@ -1,0 +1,23 @@
+# sentiment and panic thresholds (ADR-22, docs/market-data.md)
+# every number is a placeholder: tune on real data before trusting a panic state
+
+baseline_days: 60                 # window for the "normal" level of each signal
+min_families_for_panic: 2         # text alone never declares panic
+
+families:
+  market:
+    is_enabled: true
+    threshold_z: null             # null = not tuned yet; the signal is stored but never crosses
+  attention:
+    is_enabled: true
+    fear_terms_vi: []             # search terms in Vietnamese, chosen and reviewed by Huy
+    fear_terms_en: []
+    threshold_z: null
+  text:
+    is_enabled: true
+    default_source_reliability: F # social sources until they have a track record
+    max_credibility: 3
+    threshold_z: null
+
+retention:
+  social_posts_days: 7            # raw posts are deleted after this; only aggregates are kept

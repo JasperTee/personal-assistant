@@ -1,0 +1,25 @@
+# factor map template — copy to <sector>.yaml and fill in (docs/market-data.md, ADR-21)
+# the tier of each node is computed by code (shortest path to the subject); do not write it here
+# every value below is a placeholder
+
+sector: example_sector            # snake_case, same as the file name
+market: example_market            # e.g. vn, au, us
+subject: company                  # node id of tier 0 (the company or sector being analysed)
+
+nodes:
+  - id: company
+    label: "The company itself"
+    series: []                    # data series that measure this node, e.g. "financials:revenue"
+
+  - id: example_commodity_price
+    label: "Price of the main product"
+    series: ["source_name:series_id"]
+    is_seasonal: false            # true -> store value_vs_norm (deviation from seasonal norm)
+
+edges:
+  - from: example_commodity_price # cause
+    to: company                   # effect
+    relation: revenue_driver      # supplies_to | demand_driver | cost_input | revenue_driver | substitute | policy
+    direction: "+"                # "+" cause up -> effect up; "-" cause up -> effect down
+    lag_days: [0, 90]             # [min, max] delay before the effect shows
+    mechanism: "One sentence: why the cause moves the effect."
