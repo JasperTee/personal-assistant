@@ -21,6 +21,13 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 | ADR-15 | Scheduled runs: read → select → verify → dedupe → send → confirm → commit | Proposed (phase 5) | 2026-11-11 |
 | ADR-16 | Clean Architecture for the system, MVC only in channels; folders by layer, then area | Accepted | 2026-11-11 |
 | ADR-17 | LLM input preprocessing (normalised + original text); verify with evals | Accepted | 2026-11-12 |
+| ADR-18 | Branches, pull requests and a protected `main` | Accepted | 2026-11-12 |
+| ADR-19 | Use cases live in `application/` | Accepted | 2026-11-12 |
+| ADR-20 | Market analysis joins the MVP (Secretary + Rental + Market) | Accepted | 2026-11-13 |
+| ADR-21 | Five-axis data model for market evidence | Accepted | 2026-11-13 |
+| ADR-22 | Sentiment and panic as a separate market-state signal | Accepted | 2026-11-13 |
+| ADR-23 | Quantitative layer: statistics and ML on past data, agents interpret and challenge | Proposed | 2026-11-13 |
+| ADR-24 | Indicator trust that changes over time and by regime, earned from past results | Proposed | 2026-11-13 |
 
 ---
 
@@ -215,3 +222,61 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
   - `channels/` keeps its name: "channel" is the chatbot industry's word for Telegram, Teams, Slack, and the folder also holds the scheduler, so `presentation/` or `web/` would be wrong.
 - **Why:** `application/` is the name used by the common .NET and Python Clean Architecture templates (`Domain / Application / Infrastructure / Web`); a reader sees the four rings at a glance.
 - **Trade-offs:** one level deeper for tools (`application/tools/reminders/create.py`); every import of the moved modules changed once.
+
+## ADR-20 — Market analysis joins the MVP (Secretary + Rental + Market)
+
+- **Context:** Market was a "Could" area planned for phase 6. Huy decided that deep market analysis is a core goal of the project: answers that combine company figures, sector and supply-chain data, macro data, weather and seasons into a causal chain, not a single data point and a vague conclusion.
+- **Options:** (a) keep Market in phase 6; (b) Market replaces Rental in the MVP; (c) Market is added to the MVP next to Secretary and Rental.
+- **Chosen:** (c). New use case MKT-07 (deep multi-factor analysis) and MKT-08 (forecast log and scoring) are **Must**.
+- **Why:** it is the part of the project Huy cares most about and the strongest CV piece; Rental stays because it solves a real monthly job.
+- **Trade-offs:**
+  - The MVP is bigger; Market needs a data layer (ADR-21) and source tools before any analysis is useful.
+  - **Budget (open):** the MVP limit of $15/month was set without Market. A deep run calls the strong model several times; the limit must be re-checked once the first deep run is measured (`run_logs.cost_usd`).
+- **Data model:** ADR-21, docs/market-data.md.
+
+## ADR-21 — Five-axis data model for market evidence
+
+- **Context:** to avoid shallow analysis, the agent must know how close each fact is to the subject, how far it can be trusted and whether it was public at the time. A single "quality" label mixes these up.
+- **Options:** (a) store raw text and let the LLM judge relevance and quality; (b) one relevance tier + one quality grade; (c) five independent axes, computed or graded in code.
+- **Chosen:** (c), described in docs/market-data.md:
+  1. **Relevance tier 0–4**, computed from a factor-map **graph** (`config/market/factor_maps/<sector>.yaml`) as the shortest path to the subject; tier ≥ 2 evidence needs a path to tier 0.
+  2. **Source reliability A–F** and 3. **information credibility 1–6**, graded separately (Admiralty Code).
+  4. **Processing layer** bronze (`raw_records`) → silver (`observations`) → gold (`evidence`); the LLM reads gold only.
+  5. **Time:** period, `published_at`, `ingested_at`, edge `lag_days`; point-in-time rule `published_at <= as_of`; seasonal data stored as deviation from the seasonal norm.
+  - Every forecast goes into `forecasts` and is scored later; only forecasts after the LLM's training cut-off count.
+- **Why:** customer–supplier links carry predictable information (Cohen & Frazzini 2008) and are best modelled as a graph; intelligence analysis grades source and information independently because merging them makes unconfirmed claims look confirmed; point-in-time data is the only way to test forecasts honestly, and LLM forecasts are inflated on periods inside their training data.
+- **Trade-offs:** more tables and a factor map to write per sector; grading sources takes a track record that does not exist yet (new sources start at F).
+- **Code:** `domain/market/` (`models.py`, `factor_graph.py`, `evidence_rules.py`) — pure rules, no I/O; loading YAML and fetching data belong in `infrastructure/`.
+
+
+## ADR-22 — Sentiment and panic as a separate market-state signal
+
+- **Context:** Huy wants the Market persona to recognise market panic, including from social-media posts and comments, so a deep analysis can say whether a move comes from fundamentals or from fear.
+- **Options:** (a) LLM reads posts and judges the mood; (b) one social-media sentiment score as a factor like any other; (c) a market-state signal built from three families (market data, search attention, text), stored as deviation from baseline, linked to price only.
+- **Chosen:** (c), described in docs/market-data.md "Sentiment and panic":
+  - panic is declared only when at least two families cross their thresholds together; text alone never declares it;
+  - social sources start at reliability F, credibility ≤ 3; a bot and coordination filter runs before counting;
+  - only aggregates reach the LLM; raw posts are deleted after `retention.social_posts_days`; no scraping against a platform's terms;
+  - output is a risk statement ("sentiment-driven, tends to revert"), never a buy or sell instruction.
+- **Why:** the best-known social-mood result did not replicate; social sentiment predicts at most intraday moves; a large share of stock-tweet authors can be bots; media pessimism predicts a drop followed by reversion. Market data is harder to fake and anchors the signal.
+- **Trade-offs:** thresholds need real data before they mean anything; social APIs may cost money or be unavailable for Vietnamese forums, in which case that family relies on the press and search data.
+- **Threat model:** coordinated posts trying to steer the bot are a new attack path (add to threat-model.md before the first social source).
+
+## ADR-23 — Quantitative layer: statistics and ML on past data, agents interpret and challenge
+
+- **Context:** LLM calls are the main cost, LLMs are weak at numbers, and LLM forecasts on past periods are inflated by memorised outcomes. Huy proposed analysing past data with statistics and machine learning and keeping agents for interpretation and challenge.
+- **Options:** (a) agents do everything; (b) models only, no agents; (c) models for what repeats in past data, agents for reading text, explaining, challenging models and handling events with no history ("quantamental").
+- **Chosen:** (c), docs/market-data.md "Quantitative layer": baseline first, walk-forward validation on point-in-time data, every trial logged, model output stored as `evidence` (`kind = model`) with its validation figures.
+- **Why:** models run free on the owner's machine and give reproducible numbers; ML return predictability is small but has real economic value (Gu, Kelly & Xiu); agents add what models cannot know.
+- **Trade-offs:** a second skill set (statistics, ML) to learn and test; backtest overfitting is the main risk (Bailey et al.), hence the validation rules.
+- **Code (later):** pure scoring rules in `domain/market/`; model fitting with statistics/ML libraries behind a port in `infrastructure/`.
+- **Status:** Proposed — Huy is still evaluating the Market direction; Rental comes first.
+
+## ADR-24 — Indicator trust that changes over time and by regime, earned from past results
+
+- **Context:** an indicator that is reliable in one period may not be in another; Huy wants each indicator to carry a trust score based on its past results, so one indicator can be trusted more now and another more at a different time.
+- **Options:** (a) fixed trust per indicator; (b) "optimal" weights re-estimated from recent errors; (c) time- and regime-dependent trust from scored past calls, shrunk toward equal weights by sample size.
+- **Chosen:** (c), docs/market-data.md "Indicator trust": few code-defined regimes, scores per regime and horizon with exponential decay, shrinkage toward the average, sample size shown next to every score.
+- **Why:** forecasting relations are unstable over time (Stock & Watson), and time-varying weights improved S&P 500 forecasts with economic gains (Ravazzolo et al.); but estimated weights are noisy and equal weights often win (forecast combination puzzle, Smith & Wallis), so trust must be earned slowly.
+- **Trade-offs:** needs many scored calls before scores mean much; regime definitions are a judgement that must stay small and fixed in advance.
+- **Status:** Proposed — same reason as ADR-23.

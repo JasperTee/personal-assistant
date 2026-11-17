@@ -135,3 +135,113 @@ Ledger of what scheduled runs have sent, used for de-duplication and confirm-bef
 ## Not stored in the DB
 
 API keys, passwords (→ `.env`). OAuth tokens, if they must be stored, are encrypted with `TOKEN_ENCRYPTION_KEY`.
+
+## Market tables — MVP · Per persona (market)
+
+Model and rules: [market-data.md](market-data.md), ADR-21. Layers: bronze `raw_records` → silver `observations` → gold `evidence`.
+
+### raw_records — bronze
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| source | string | Where it came from, e.g. `open_meteo`, `company_filings` |
+| request | json | What was asked (endpoint, parameters) — enough to fetch it again |
+| payload | text | Exactly what the source returned; never changed |
+| ingested_at | datetime | When the bot fetched it |
+
+### observations — silver
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| raw_record_id | FK raw_records | Where it was parsed from |
+| series | string | `source:series_id`, as in the factor map |
+| entity | string | Company, commodity, region or country it describes |
+| period_start_on, period_end_on | date | Period the value describes |
+| value | decimal | Value, in `unit` |
+| unit | string | e.g. `vnd_bn`, `usd_per_tonne`, `mm_rain`, `percent` |
+| value_vs_norm | decimal, nullable | Deviation from the seasonal norm (seasonal series only) |
+| published_at | datetime | When it became public — the point-in-time key |
+
+### evidence — gold
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| subject | string | Node id of tier 0 this evidence is about |
+| factor_id | string | Node id in the factor map |
+| tier | int 0–4 | Computed from the factor map (shortest path) |
+| path | json | Edge ids from `factor_id` down to the subject |
+| statement | text | One sentence the LLM may use |
+| direction | enum: +, - | Effect on the subject |
+| source_reliability | enum: A–F | Grade of the source for this kind of claim |
+| credibility | int 1–6 | Grade of this item (corroboration) |
+| kind | enum: fact, model, derived | Fact from a source; model output (ADR-23); or derived note |
+| model_run_id | FK model_runs, nullable | Model run that produced it (`kind = model`) |
+| observation_ids | json | Silver rows it is built from |
+| published_at | datetime | Latest `published_at` among those rows |
+
+### forecasts
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| run_id | string | Run that made it |
+| subject | string | What it is about |
+| statement | text | The forecast, measurable |
+| probability | decimal 0–1 | Stated probability |
+| evidence_ids | json | Evidence it relied on |
+| model | string | LLM used — scoring ignores periods inside its training data |
+| due_on | date | When it can be scored |
+| outcome | enum: pending, correct, wrong, unclear | Result |
+| scored_at | datetime, nullable | When it was scored |
+
+### source_ratings
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| source | string | Source name |
+| claim_type | string | e.g. `official_figure`, `forecast`, `news`, `social` |
+| reliability | enum: A–F | Current grade (F for new sources) |
+| hit_count, miss_count | int | Track record used to move the grade |
+| updated_at | datetime | Last change |
+
+### sentiment_snapshots — gold (ADR-22)
+
+One row per subject, family and time window. No personal data.
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| subject | string | Ticker, sector or market (e.g. `vn_index`) |
+| family | enum: market, attention, text | Signal family |
+| source | string | e.g. `search_trends`, `press`, `social:<platform>` |
+| window_start_at, window_end_at | datetime | Time window |
+| post_count | int, nullable | Posts after the bot filter (text family) |
+| removed_count | int, nullable | Posts dropped by the bot / coordination filter |
+| negative_share, positive_share | decimal 0–1, nullable | Share of negative / positive items |
+| value_vs_norm | decimal | Deviation from the recent baseline (e.g. z-score) |
+| is_above_threshold | bool | Crossed its threshold in `config/market/sentiment.yaml` |
+| published_at | datetime | End of window — point-in-time key |
+
+### model_runs — ADR-23 (proposed)
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| model_name | string | e.g. `baseline_mean`, `ridge_rates_banks` |
+| target | string | What it predicts (series, horizon) |
+| trained_from_on, trained_to_on | date | Training window (point-in-time data only) |
+| validation | enum: walk_forward | Validation method |
+| oos_error | decimal | Out-of-sample error (metric named in `oos_metric`) |
+| oos_metric | string | e.g. `mse`, `brier` |
+| baseline_oos_error | decimal | Same metric for the baseline model |
+| sample_count | int | Observations used |
+| trial_number | int | How many models / settings had been tried for this target |
+
+### indicator_ratings — ADR-24 (proposed)
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| indicator | string | Indicator, sentiment family or model name |
+| regime | string | Regime id defined in `config/market/indicator_trust.yaml` |
+| horizon_days | int | Forecast horizon |
+| scored_count | int | Past calls scored in this regime and horizon |
+| score | decimal | Decayed average score (e.g. Brier) |
+| trust | decimal 0–1 | Score shrunk toward the average by `scored_count` |
+| updated_at | datetime | Last recalculation |
