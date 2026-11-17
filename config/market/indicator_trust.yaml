@@ -1,0 +1,11 @@
+# indicator trust (ADR-24, docs/market-data.md) — every number is a placeholder
+
+score_metric: brier              # scoring rule for probabilistic calls
+half_life_days: null             # exponential decay of old results; null = not chosen yet
+shrinkage_scored_count: null     # calls needed before trust moves halfway from the average
+
+regimes:                         # few on purpose; defined from data by code
+  - id: volatility_high
+    rule: null                   # e.g. realised volatility above its baseline; to be defined
+  - id: volatility_normal
+    rule: null
