@@ -95,11 +95,11 @@ Async functions are named like sync ones (no `_async` suffix).
 - English only (ADR-14), no abbreviations except well-known ones: `id`, `url`, `db`, `llm`, `ms`.
 - Use the project's words consistently: **persona** (not bot/agent in code), **tool** (not function/skill), **run** (one pass through the pipeline), **owner** (Huy), **tenant**.
 
-## 9. Structure (ADR-16, ADR-19, ADR-25, ADR-26)
+## 9. Structure (ADR-16, ADR-19, ADR-25, ADR-26, ADR-30)
 
-Services first: `services/<name>/` (`assistant`, `rental`, `market`, `finance`). A service never imports another service's package; import-linter checks it.
+Apps and services first: `apps/<name>/` for what people use (`assistant`, later `rental-web`), `services/<name>/` for business areas (`rental`, `market`, `finance`). None imports another's package; import-linter checks it. Apps call services, services never call apps.
 
-Inside `services/assistant/src/assistant/`: layer first, then area. The path tells you the layer and the job:
+Inside `apps/assistant/src/assistant/`: layer first, then area. The path tells you the layer and the job:
 
 | What | Path | Example |
 | --- | --- | --- |
@@ -119,7 +119,7 @@ Import only downwards: `main` → `entrypoints | infrastructure` → `applicatio
 
 Every service, in this repository and in the study app (.NET, its own repository), has the same four rings and the same composition root. Inside one language the names are identical; across languages they map one to one.
 
-| Ring | Python service (`services/<name>/src/<name>/`) | .NET project (`src/<App>.<Ring>/`) |
+| Ring | Python app or service (`apps/<name>/src/<name>/`, `services/<name>/src/<name>/`) | .NET project (`src/<App>.<Ring>/`) |
 | --- | --- | --- |
 | Entities, business rules | `domain/` | `<App>.Domain` |
 | Use cases, ports | `application/` | `<App>.Application` |
@@ -144,7 +144,7 @@ Every service, in this repository and in the study app (.NET, its own repository
 
 ## 10. Tests
 
-- Each service's `tests/` mirrors its `src/<service>/`: `services/assistant/src/assistant/application/policy/guard.py` → `services/assistant/tests/application/policy/test_guard.py`.
+- Each service's `tests/` mirrors its `src/<service>/`: `apps/assistant/src/assistant/application/policy/guard.py` → `apps/assistant/tests/application/policy/test_guard.py`.
 - One `Test<ClassName>` class per class under test; test names say the behaviour: `test_<what>_<expected>`, e.g. `test_tool_call_rejects_wrong_types`.
 - Shared fixtures in `tests/conftest.py`; no `__init__.py` in `tests/`.
 

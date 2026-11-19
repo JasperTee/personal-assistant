@@ -3,7 +3,7 @@ name = "rental"
 version = "0.1.0"
 description = "Rental service: rooms, tenants, meter readings, bills, invoices (ADR-25)"
 requires-python = ">=3.12"
-# added step by step, like services/assistant.
+# added step by step, like apps/assistant.
 dependencies = []
 
 [project.optional-dependencies]
@@ -11,14 +11,14 @@ dev = ["pytest", "ruff", "import-linter"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# tests/ mirrors src/ and has no __init__.py files (same as services/assistant).
+# tests/ mirrors src/ and has no __init__.py files (same as apps/assistant).
 addopts = ["--import-mode=importlib"]
 
 [tool.ruff]
 line-length = 100
 
 [tool.ruff.lint]
-# same rules as services/assistant; see docs/conventions.md.
+# same rules as apps/assistant; see docs/conventions.md.
 select = ["E", "F", "I", "N", "D403"]
 
 # only domain/ exists so far; the layers contract is added with application/ (ADR-26).
