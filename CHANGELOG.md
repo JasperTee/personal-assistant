@@ -16,7 +16,7 @@ Record every finished phase or significant change. Newest first.
 
 ### Changed
 - Folder layout (ADR-30): `assistant` moved to `apps/assistant/`; `services/` keeps the business areas (`rental`, `market`, `finance`). CI runs one job per app and service.
-- Telegram webhook in every environment instead of polling (ADR-29): secret header, one path per bot, dev bot + tunnel on the laptop.
+- Telegram stays on long polling (ADR-31, supersedes ADR-29 before it was built): no public URL, tunnel or webhook settings; a dev bot on the laptop, the real bot on the server.
 - Rental retention (ADR-27): readings, invoices and calculations kept 12 months, meter-book photos 3 months; settings moved to `services/rental/config/settings.yaml`.
 - Planner (reminders, to-dos, study deadlines) belongs to the study app, in its own repository (ADR-28); SEC-02 and SEC-03 leave the assistant MVP.
 - Monorepo of services (ADR-25, ADR-26): code moved to `services/assistant/`; new `services/rental/`, `services/market/` and `services/finance/` with their domain stubs; one CI job per service plus the required `checks` job; `channels/` renamed `entrypoints/` so every service has the same rings.

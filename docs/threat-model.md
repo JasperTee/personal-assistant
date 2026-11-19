@@ -28,7 +28,7 @@ Something still off? → ⑦ Logs to trace and fix
 | T-02 | A stranger uses the bot | Someone finds the Telegram bot and messages it | Allowlist by Telegram user id at step ② | None |
 | T-03 | Leaked secrets | Pushing `.env` to GitHub | `.gitignore`; keys only in `.env`; spending limit on the API dashboard; rotate keys on suspicion | Leak through an infected personal machine |
 | T-04 | Wallet attack | An infinite loop or messages crafted to trigger many calls | Loop limit; monthly budget in Policy; rate limiting | Max cost equals the monthly budget |
-| T-05 | Forged webhook | An attacker sends fake requests to the webhook endpoint | Webhook secret token; firewall opens only the needed ports | Low |
+| T-05 | Forged webhook | An attacker sends fake requests to the webhook endpoint | No webhook: the bot polls Telegram over outgoing HTTPS (ADR-31), so no inbound port is open for it | None |
 | T-06 | Malicious library / plugin | A typosquatted Python package, a rogue skill stealing keys | Only popular libraries with pinned versions; no plugins/MCP servers from strangers | Vulnerabilities in popular libraries — update regularly |
 | T-07 | A tenant snoops (phase 7) | "Show me room 5's invoice" | Roles in Policy; queries always filtered by the requester | Low |
 | T-08 | Data leaks into another chat | The bot sends private info into a tenant's chat | Recipient check at step ⑥; sensitive data only returned to the owner's personas | Low |

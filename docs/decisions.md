@@ -32,8 +32,9 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 | ADR-26 | Monorepo with one folder per service under `services/` | Accepted; `assistant` moved to `apps/` by ADR-30 | 2026-11-18 |
 | ADR-27 | Rental keeps readings and bills for 12 months, meter-book photos for 3 | Accepted | 2026-11-18 |
 | ADR-28 | The planner belongs to the study app (own repository, .NET); the assistant is its client | Accepted | 2026-11-18 |
-| ADR-29 | Telegram webhook in every environment, ready for several replicas | Accepted | 2026-11-18 |
+| ADR-29 | Telegram webhook in every environment, ready for several replicas | Superseded by ADR-31 | 2026-11-18 |
 | ADR-30 | Apps in `apps/`, business services in `services/` | Accepted | 2026-11-19 |
+| ADR-31 | Telegram stays on long polling; one owner, one process | Accepted | 2026-11-19 |
 
 ---
 
@@ -347,6 +348,8 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 
 ## ADR-29 — Telegram webhook in every environment, ready for several replicas
 
+> **Superseded by ADR-31** (2026-11-19): the bot keeps long polling. Never implemented.
+
 - **Context:** the bot asks Telegram for new messages (`run_polling()`). Only one process can poll a bot, so `assistant` could never run more than one copy, and the server setup (tunnel, HTTPS) would first be tested only at deployment.
 - **Options:** (a) keep polling; (b) polling on the laptop, webhook on the server, chosen by a setting; (c) webhook everywhere.
 - **Chosen:** (c). Telegram sends each update as an HTTPS POST to the bot (`run_webhook()` of python-telegram-bot, `python-telegram-bot[webhooks]`).
@@ -374,3 +377,14 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
   - Paths moved: `services/assistant/` → `apps/assistant/`. Older ADRs keep the old path as history.
 - **Why:** the tree shows the dependency direction at a glance; front ends have an obvious home; the services that could become their own product or repository are the ones under `services/`.
 - **Trade-offs:** two top-level folders instead of one; the move touched CI, README and docs once; each local virtualenv must reinstall `assistant` from its new path. Option (c) was rejected because there every service would also be an "app", which hides the difference this ADR is about.
+
+## ADR-31 — Telegram stays on long polling; one owner, one process
+
+- **Context:** ADR-29 chose webhooks so `assistant` could run several copies. The bot has one user (Huy, owner-only through `AccessPolicy`) and one channel (Telegram); there will be no tenant chat or other channels. One process handles that load easily, and the server is a home machine behind a router, not a load-balanced cloud host.
+- **Options:** (a) long polling everywhere; (b) polling on the laptop, webhook on the server; (c) webhook everywhere (ADR-29).
+- **Chosen:** (a). `Application.run_polling()` from python-telegram-bot, on the laptop and on the server.
+  - **One process per bot token:** Telegram allows only one poller per token, so the laptop uses a separate **dev bot** from BotFather while the server runs the real one.
+  - No public URL, tunnel, inbound port or webhook secret; `TELEGRAM_WEBHOOK_*` and the `telegram.webhook_*` settings are removed.
+  - Conversation state still lives in the database, not in memory, so a restart loses nothing.
+- **Why:** the reasons for ADR-29 (replicas, serverless, load balancer) do not apply to a single-owner bot. Polling needs only outgoing HTTPS, so the home server opens no port to the internet: less to configure and less to attack. Long polling holds the request open until a message arrives, so replies are just as fast.
+- **Trade-offs:** `assistant` cannot run more than one copy per bot; if that is ever needed, a new ADR brings webhooks back (ADR-29 has the design). Two bots to manage (dev and real). Each poll is an open outgoing connection that the server keeps up.
