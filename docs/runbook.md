@@ -14,8 +14,8 @@ Use when the bot behaves strangely, costs spike, or a key may have leaked.
 ## Running locally (phases 1–3)
 
 1. Create a Python 3.12+ virtualenv at the repo root and install each service from its `services/<name>/pyproject.toml` (commands in README.md).
-2. Copy `services/assistant/.env.example` → `services/assistant/.env`, fill in the **dev bot** token, `OWNER_TELEGRAM_ID` and a long random `TELEGRAM_WEBHOOK_SECRET` (e.g. `python -c "import secrets; print(secrets.token_urlsafe(32))"`).
-3. Run the Alembic migrations to create the tables in `services/assistant/data/assistant.db`.
+2. Copy `apps/assistant/.env.example` → `apps/assistant/.env`, fill in the **dev bot** token, `OWNER_TELEGRAM_ID` and a long random `TELEGRAM_WEBHOOK_SECRET` (e.g. `python -c "import secrets; print(secrets.token_urlsafe(32))"`).
+3. Run the Alembic migrations to create the tables in `apps/assistant/data/assistant.db`.
 4. Start a tunnel in a second terminal: `cloudflared tunnel --url http://localhost:8080`; put the `https://….trycloudflare.com` URL it prints into `TELEGRAM_WEBHOOK_BASE_URL` (it changes every time).
 5. Start the bot (webhook, ADR-29): `python -m assistant.main`; it registers `<base URL>/telegram/secretary` with Telegram.
 6. Message the dev bot on Telegram; check the rows in `messages` and `run_logs`.

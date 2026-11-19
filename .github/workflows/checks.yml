@@ -6,19 +6,19 @@ on:
     branches: [main]  # and after merging into main
 
 jobs:
-  # one job per service (ADR-26); later: run only the services a PR changes (paths filters)
-  service:
+  # one job per app and service (ADR-26, ADR-30); later: run only what a PR changes (paths filters)
+  check:
     runs-on: ubuntu-latest  # a fresh Linux machine from GitHub
 
     strategy:
       fail-fast: false  # finish every service, so one PR shows all failures
       matrix:
-        service: [assistant, rental, market, finance]
-    name: service (${{ matrix.service }})
+        path: [apps/assistant, services/rental, services/market, services/finance]
+    name: check (${{ matrix.path }})
 
     defaults:
       run:
-        working-directory: services/${{ matrix.service }}
+        working-directory: ${{ matrix.path }}
 
     steps:
       - name: Get the code
@@ -42,11 +42,11 @@ jobs:
         # exit code 5 = no tests collected yet (stub services); any other failure still fails
         run: pytest || [ $? -eq 5 ]
 
-  # "checks" is the required check on main (ADR-18): green only if every service job is green
+  # "checks" is the required check on main (ADR-18): green only if every app and service job is green
   checks:
     runs-on: ubuntu-latest
-    needs: service
+    needs: check
     if: always()  # still runs when a service job fails, so the result is reported
     steps:
-      - name: All services passed
-        run: test "${{ needs.service.result }}" = "success"
+      - name: All apps and services passed
+        run: test "${{ needs.check.result }}" = "success"

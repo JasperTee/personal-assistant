@@ -30,39 +30,42 @@ domain/                          data contracts, ports, business rules — impor
 
 ## Folder structure
 
-Monorepo of services (ADR-25, ADR-26). Each service has its own `pyproject.toml`, code, tests and
-config; services never import each other's code.
+Monorepo of apps and services (ADR-25, ADR-26, ADR-30). `apps/` holds what people use (the Telegram
+assistant, later `rental-web`); `services/` holds the business areas the apps call over gRPC. Each one
+has its own `pyproject.toml`, code, tests and config, and none imports another's code. Apps call
+services; services never call apps.
 
 ```text
 personal-assistant/
-├── services/
-│   ├── assistant/              # Telegram bots, pipeline, LLM, personas, reminders
-│   │   ├── config/             # personas, prompts, settings — no secrets
-│   │   ├── data/               # SQLite file when running locally (not committed)
-│   │   ├── migrations/         # Alembic
-│   │   ├── src/assistant/
-│   │   │   ├── domain/         # models.py, ports.py
-│   │   │   ├── entrypoints/    # telegram/, scheduler/ — controller.py, presenter.py
-│   │   │   ├── application/    # use cases: pipeline, router, context_builder, agent_loop, postprocess
-│   │   │   │   ├── policy/     # access.py, budget.py, guard.py
-│   │   │   │   └── tools/      # registry.py + <area>/<verb>.py (reminders/create.py)
-│   │   │   ├── infrastructure/ # config.py, run_logger.py, db/, llm/
-│   │   │   └── main.py         # composition root
-│   │   └── tests/              # mirrors src/ (tests/application/policy/test_guard.py) + evals.yaml
+├── apps/                       # what people use; calls the services
+│   └── assistant/              # Telegram bots, pipeline, LLM, personas, policy
+│       ├── config/             # personas, prompts, settings — no secrets
+│       ├── data/               # SQLite file when running locally (not committed)
+│       ├── migrations/         # Alembic
+│       ├── src/assistant/
+│       │   ├── domain/         # models.py, ports.py
+│       │   ├── entrypoints/    # telegram/, scheduler/ — controller.py, presenter.py
+│       │   ├── application/    # use cases: pipeline, router, context_builder, agent_loop, postprocess
+│       │   │   ├── policy/     # access.py, budget.py, guard.py
+│       │   │   └── tools/      # registry.py + <area>/<verb>.py (reminders/create.py)
+│       │   ├── infrastructure/ # config.py, run_logger.py, db/, llm/
+│       │   └── main.py         # composition root
+│       └── tests/              # mirrors src/ (tests/application/policy/test_guard.py) + evals.yaml
+├── services/                   # business areas; never call apps
 │   ├── rental/                 # rooms, tenants, readings, bills, invoices — src/rental/domain/
 │   ├── market/                 # market data, evidence, forecasts — src/market/domain/, config/
 │   └── finance/                # expenses, budgets, reports — src/finance/domain/
 ├── docs/                       # docs that live with the code
-└── .github/workflows/          # CI: one job per service + the required `checks` job
+└── .github/workflows/          # CI: one job per app and service + the required `checks` job
 ```
 
 ## Running locally
 
 1. Python 3.12+; create one virtualenv at the repo root: `uv venv`.
-2. Install every service with its dev tools: `uv pip install -e "services/assistant[dev]" -e "services/rental[dev]" -e "services/market[dev]" -e "services/finance[dev]"`.
-3. Copy `services/assistant/.env.example` to `services/assistant/.env` and fill in tokens and API keys.
+2. Install every service with its dev tools: `uv pip install -e "apps/assistant[dev]" -e "services/rental[dev]" -e "services/market[dev]" -e "services/finance[dev]"`.
+3. Copy `apps/assistant/.env.example` to `apps/assistant/.env` and fill in tokens and API keys.
 4. Start the bot: `python -m assistant.main` (phase 1 echoes your messages; Ctrl+C stops it).
-5. Before every commit, inside each service folder you changed (`cd services/<name>`): `ruff check .`, `lint-imports`, `pytest`.
+5. Before every commit, inside each folder you changed (`cd apps/<name>` or `cd services/<name>`): `ruff check .`, `lint-imports`, `pytest`.
 
 Step-by-step details, deployment and the **emergency shutdown**: [`docs/runbook.md`](docs/runbook.md).
 

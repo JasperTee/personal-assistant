@@ -40,7 +40,7 @@ Something still off? → ⑦ Logs to trace and fix
 
 ## Regular checks
 
-- [ ] Run the attack cases in `services/assistant/tests/evals.yaml` (`security` group) before each phase.
+- [ ] Run the attack cases in `apps/assistant/tests/evals.yaml` (`security` group) before each phase.
 - [ ] Review `run_logs` weekly: rejected EXTERNAL tools, unusual errors, cost spikes.
 - [ ] Update libraries monthly.
 - [ ] Rotate API keys every 6 months or immediately on suspicion of a leak.

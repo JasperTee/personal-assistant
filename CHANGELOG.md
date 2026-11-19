@@ -15,6 +15,7 @@ Record every finished phase or significant change. Newest first.
 - Proposed quantitative layer (ADR-23) and time- and regime-dependent indicator trust (ADR-24): `model_runs`, `indicator_ratings`, `evidence.kind`.
 
 ### Changed
+- Folder layout (ADR-30): `assistant` moved to `apps/assistant/`; `services/` keeps the business areas (`rental`, `market`, `finance`). CI runs one job per app and service.
 - Telegram webhook in every environment instead of polling (ADR-29): secret header, one path per bot, dev bot + tunnel on the laptop.
 - Rental retention (ADR-27): readings, invoices and calculations kept 12 months, meter-book photos 3 months; settings moved to `services/rental/config/settings.yaml`.
 - Planner (reminders, to-dos, study deadlines) belongs to the study app, in its own repository (ADR-28); SEC-02 and SEC-03 leave the assistant MVP.

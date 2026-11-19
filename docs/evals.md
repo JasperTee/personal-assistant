@@ -4,7 +4,7 @@ Two layers: **unit tests** (fast, use a fake LLM, cost nothing) and **evals** (r
 
 ## Unit tests — `tests/`
 
-Each service has its own `tests/` that mirrors its `src/<service>/`: the test for `services/assistant/src/assistant/application/policy/guard.py` is `services/assistant/tests/application/policy/test_guard.py`. Paths in the table are inside `services/assistant/tests/` unless they name another service. Inside a file, tests are grouped in a `Test<ClassName>` class. Shared fixtures go in `tests/conftest.py`.
+Each service has its own `tests/` that mirrors its `src/<service>/`: the test for `apps/assistant/src/assistant/application/policy/guard.py` is `apps/assistant/tests/application/policy/test_guard.py`. Paths in the table are inside `apps/assistant/tests/` unless they name another service. Inside a file, tests are grouped in a `Test<ClassName>` class. Shared fixtures go in `tests/conftest.py`.
 
 | File | Checks | From phase |
 | --- | --- | --- |
