@@ -28,11 +28,12 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 | ADR-22 | Sentiment and panic as a separate market-state signal | Accepted | 2026-11-13 |
 | ADR-23 | Quantitative layer: statistics and ML on past data, agents interpret and challenge | Proposed | 2026-11-13 |
 | ADR-24 | Indicator trust that changes over time and by regime, earned from past results | Proposed | 2026-11-13 |
-| ADR-25 | Microservices split by business area: assistant, rental, market, finance | Accepted; reminders and to-dos moved by ADR-28 | 2026-11-18 |
-| ADR-26 | Monorepo with one folder per service under `services/` | Accepted | 2026-11-18 |
+| ADR-25 | Microservices split by business area: assistant, rental, market, finance | Accepted; reminders and to-dos moved by ADR-28, retention changed by ADR-27 | 2026-11-18 |
+| ADR-26 | Monorepo with one folder per service under `services/` | Accepted; `assistant` moved to `apps/` by ADR-30 | 2026-11-18 |
 | ADR-27 | Rental keeps readings and bills for 12 months, meter-book photos for 3 | Accepted | 2026-11-18 |
 | ADR-28 | The planner belongs to the study app (own repository, .NET); the assistant is its client | Accepted | 2026-11-18 |
 | ADR-29 | Telegram webhook in every environment, ready for several replicas | Accepted | 2026-11-18 |
+| ADR-30 | Apps in `apps/`, business services in `services/` | Accepted | 2026-11-19 |
 
 ---
 
@@ -293,7 +294,7 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 - **Context:** everything lived in one `assistant` package. Huy wants Rental (and later Market and Finance) to stand on their own: usable from other clients such as a billing website, able to scale on their own, and able to join a bigger system instead of being one closed app. He also wants a strong business-logic structure to show in interviews.
 - **Options:** (a) keep one app; (b) a modular monolith, split later; (c) microservices now.
 - **Chosen:** (c). Claude advised (b) first; Huy chose (c), knowing the extra work.
-  - **Split by business area, not by layer.** `assistant`: Telegram, pipeline, LLM, personas, policy, chat memory, API cost, and at first reminders and to-dos (moved to the study app by ADR-28). `rental`: rooms, tenants, meter readings, bills, invoices, the 3-month clean-up (ADR-13). `market`: market data, graded evidence, forecasts and scores (ADR-20 to ADR-24). `finance`: expenses, budgets, reports (FIN-*). Later: `rental-web` (website for billing), `identity` (sign-in).
+  - **Split by business area, not by layer.** `assistant`: Telegram, pipeline, LLM, personas, policy, chat memory, API cost, and at first reminders and to-dos (moved to the study app by ADR-28). `rental`: rooms, tenants, meter readings, bills, invoices, the retention clean-up (ADR-13, changed to 12 months by ADR-27). `market`: market data, graded evidence, forecasts and scores (ADR-20 to ADR-24). `finance`: expenses, budgets, reports (FIN-*). Later: `rental-web` (website for billing), `identity` (sign-in).
   - **When something becomes a service:** it has its own data, its own business rules, and a reason to stand alone (another client, its own scaling or schedule). Otherwise it stays a module in `assistant`; this is why reminders and to-dos first stayed there (later ADR-28).
   - **One-way calls:** `assistant` calls the other services; they never call `assistant`. No service imports another service's code (import-linter contracts in every `pyproject.toml`).
   - **One database per service:** one PostgreSQL server later, with its own database and user per service; no joins across services, ids are UUIDs. This replaces the single database of ADR-09.
@@ -361,3 +362,15 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 - **Why:** dev and server run the same way (dev/prod parity), webhook problems show up on the laptop, and the bot can scale out behind a load balancer.
 - **Trade-offs:** a tunnel must be running for every local run; two bots to manage; the bot is reachable from the internet, so the secret header and the owner check (`AccessPolicy`) both matter.
 
+## ADR-30 — Apps in `apps/`, business services in `services/`
+
+- **Context:** ADR-26 put all four parts side by side under `services/`. They do different jobs: `assistant` is what people talk to (Telegram channels, the agent, personas, policy) and owns no business data of rental, market or finance; it only calls them. Huy found the flat list misleading, and more front ends are coming (`rental-web`, maybe Zalo as another channel of `assistant`).
+- **Options:** (a) keep everything in `services/` and write the roles down; (b) group by role: `apps/` for what people use, `services/` for business areas; (c) the JavaScript-monorepo style `apps/` + `libs/`, where every deployable (services too) is an app.
+- **Chosen:** (b).
+  - `apps/<name>/`: what people use; calls services over gRPC (ADR-25). Now `assistant`; later `rental-web`. A new chat channel (e.g. Zalo) is not a new app: it is another `entrypoints/<channel>/` inside `assistant`.
+  - `services/<name>/`: one business area each, with its own data; candidates to move to their own repository one day. Now `rental`, `market`, `finance`.
+  - **Direction:** apps → services, never back; services never import or call apps; nothing imports across folders (import-linter in every package).
+  - Everything else from ADR-26 stays: each folder has its own `pyproject.toml`, `src/<name>/`, `tests/`, config and later `Dockerfile`; `docs/`, `.github/` and later `proto/` stay at the root. CI runs one job per app and service.
+  - Paths moved: `services/assistant/` → `apps/assistant/`. Older ADRs keep the old path as history.
+- **Why:** the tree shows the dependency direction at a glance; front ends have an obvious home; the services that could become their own product or repository are the ones under `services/`.
+- **Trade-offs:** two top-level folders instead of one; the move touched CI, README and docs once; each local virtualenv must reinstall `assistant` from its new path. Option (c) was rejected because there every service would also be an "app", which hides the difference this ADR is about.
