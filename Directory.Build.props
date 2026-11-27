@@ -1,0 +1,20 @@
+<!--
+  Settings shared by every .NET project in this repository (MSBuild reads this file automatically
+  for any .csproj below this folder). A .csproj can still override a value for itself.
+-->
+<Project>
+  <PropertyGroup>
+    <!-- .NET version and language features -->
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- quality: a warning stops the build, so problems are fixed, not ignored -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- the same build output on every machine (CI included) -->
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+</Project>
