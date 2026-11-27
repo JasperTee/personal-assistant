@@ -1,6 +1,6 @@
 # Tool and persona specs
 
-Write the spec before coding each tool. The code (Pydantic schema + docstring) must match this file.
+Write the spec before coding each tool. The code (tool name, description and input schema) must match this file.
 
 ## Rules for writing tools
 
@@ -35,7 +35,7 @@ Write the spec before coding each tool. The code (Pydantic schema + docstring) m
 ### reminders.create
 - **Description:** Create a reminder sent to Huy at a given time. Use when Huy says "remind me…".
 - **RiskLevel:** WRITE_SELF
-- **Persona:** secretary
+- **Persona:** life
 - **Parameters:**
   - `content` — string — required — reminder text
   - `remind_at` — datetime (Sydney time) — required — when to remind; not in the past
@@ -47,13 +47,13 @@ Write the spec before coding each tool. The code (Pydantic schema + docstring) m
 
 ### reminders.list
 - **Description:** List upcoming reminders.
-- **RiskLevel:** READ · **Persona:** secretary · **Phase:** 3
+- **RiskLevel:** READ · **Persona:** life · **Phase:** 3
 - **Parameters:** `within_days` — int — optional — default 7, max 90
 
 ### expenses.add
 - **Description:** Record one expense. Use when Huy writes something like "coffee 6 dollars".
 - **RiskLevel:** WRITE_SELF
-- **Persona:** secretary
+- **Persona:** finance
 - **Parameters:**
   - `amount_aud` — decimal — required — amount > 0
   - `category` — enum (food, transport, housing, education, entertainment, other) — required
@@ -66,7 +66,7 @@ Write the spec before coding each tool. The code (Pydantic schema + docstring) m
 
 ### expenses.summary
 - **Description:** Total spending over a date range, optionally filtered by category.
-- **RiskLevel:** READ · **Persona:** secretary · **Phase:** 3
+- **RiskLevel:** READ · **Persona:** finance · **Phase:** 3
 - **Parameters:** `from_date`, `to_date` — date — required; `category` — optional
 
 ### email.send *(phase 4)*
@@ -77,17 +77,18 @@ Write the spec before coding each tool. The code (Pydantic schema + docstring) m
 - **Description:** Ask a specialist bot to do a task in its area and return the result.
 - **RiskLevel:** READ (the call itself); the specialist's actions still go through its own Policy
 - **Persona:** secretary only
-- **Parameters:** `persona` — enum (market, email, research); `task` — string — what to do and the desired output format
+- **Parameters:** `persona` — enum (life, rental, finance, market; more as specialists are added); `task` — string — what to do and the desired output format
 
 ## Personas
 
-The actual config lives in `apps/assistant/config/personas/*.yaml`.
+The actual config lives in `apps/assistant/config/personas/`. Two tiers (ADR-32): the Secretary only routes; each specialist holds its area's tools and is its own Telegram bot. Write tools act only on the specialist's own service; read-only tools on other services are allowed.
 
 | Persona | Status | Tools | Proactive |
 | --- | --- | --- | --- |
-| secretary | On (MVP) | reminders.*, tasks.list, calendar.*, ask_specialist | Morning brief |
+| secretary | On (MVP) | ask_specialist only | Morning brief (gathered from specialists) |
+| life | On (MVP) | reminders.*, tasks.list, calendar.* (the planner is in the study app, ADR-28) | Reminders |
 | rental | On (MVP) | rental.read_meter_photo, rental.confirm_readings, rental.calculate_bills, rental.render_invoice, tenants.*; later: contracts.*, rooms.*, rental.draft_tenant_message | Rent-day reminders, leases about to expire |
-| finance | Off (Should) | expenses.*, receipts.read_photo, budgets.*, finance.report | Budget alerts, weekly report |
+| finance | Off (Should) | expenses.*, receipts.read_photo, budgets.*, finance.report; read-only: rental income | Budget alerts, weekly report |
 | email | Off (Should) | email.* (Gmail + Outlook) | Important mail |
 | documents | Off (Should) | docs.ingest, docs.search, docs.ask, docs.organize | Documents about to expire |
 | learning | Off (Should) | deadlines.*, study.plan, docs.search, docs.ask, applications.* | Deadline reminders, application follow-ups |

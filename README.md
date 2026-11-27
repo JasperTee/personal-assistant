@@ -1,6 +1,6 @@
 # Personal Assistant Agent
 
-A personal AI assistant that talks over Telegram. A **Secretary** bot coordinates the specialist bots (Market, Email, Research, …); they all share one program and one database.
+A personal AI assistant that talks over Telegram. A **Secretary** bot routes each request to specialist bots (life, rental, finance, market, …) that hold the tools; Huy can also talk to each specialist directly. The bots share one app (`apps/assistant`); each business area is its own service with its own database. Being rebuilt in C# .NET (ADR-33).
 
 - Design document (architecture, pipeline, roadmap; in Vietnamese): [AI Agent design process](https://claude.ai/artifact/6PJohVCM9wezexxfhSLyz3)
 - Detailed docs: [`docs/`](docs/README.md)
