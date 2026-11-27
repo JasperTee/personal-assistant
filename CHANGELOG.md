@@ -4,6 +4,12 @@ Record every finished phase or significant change. Newest first.
 
 ## [Unreleased]
 
+### Decided
+- C# .NET is the main language and the code restarts from scratch in this repository (ADR-33, supersedes ADR-02); Python stays only for `market`.
+- Two tiers of bots (ADR-32, amends ADR-08): the Secretary only routes through `ask_specialist`; specialists (life, rental, finance, market) hold the tools and are their own Telegram bots.
+- Service boundaries (ADR-34): microservices stay; data only through APIs, no shared database or copies; ID-card data only through an owner-only Rental endpoint, never through AI or Telegram; no identity service; rules for where an LLM may run and which formats go between parts.
+- Personal scope, home server instead of AWS (supersedes ADR-11), and an architecture freeze until the bot answers with Claude and rent is billed once (ADR-35). Parked ideas go to `docs/ideas.md`.
+
 ### Added
 - Project skeleton: 5-layer folder structure, docs in `docs/`, Secretary persona config.
 - Project text (docs, config, prompts, docstrings) translated to English.

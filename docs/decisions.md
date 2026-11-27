@@ -5,16 +5,16 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 | ID | Decision | Status | Date |
 | --- | --- | --- | --- |
 | ADR-01 | Build our own instead of using OpenClaw | Accepted | 2026-11-09 |
-| ADR-02 | Python | Accepted | 2026-11-09 |
+| ADR-02 | Python | Superseded by ADR-33 (C# .NET main) | 2026-11-09 |
 | ADR-03 | Use LLM APIs, don't run models locally | Accepted | 2026-11-09 |
 | ADR-04 | Telegram is the first channel | Accepted | 2026-11-09 |
 | ADR-05 | 5-layer architecture + 7-step pipeline | Accepted | 2026-11-09 |
 | ADR-06 | Policy layer in code, RiskLevel classification | Accepted | 2026-11-09 |
 | ADR-07 | Routing before the agent loop | Accepted | 2026-11-09 |
-| ADR-08 | Secretary + specialist bots (hub-and-spoke) | Accepted | 2026-11-09 |
+| ADR-08 | Secretary + specialist bots (hub-and-spoke) | Accepted; amended by ADR-32 (two tiers) | 2026-11-09 |
 | ADR-09 | One database: SQLite → PostgreSQL | Superseded by ADR-25 (one database per service) | 2026-11-09 |
 | ADR-10 | Write our own agent loop, no framework yet | Accepted | 2026-11-09 |
-| ADR-11 | Run locally during development, AWS VPS once stable | Accepted | 2026-11-09 |
+| ADR-11 | Run locally during development, AWS VPS once stable | Superseded by ADR-35 (home server) | 2026-11-09 |
 | ADR-12 | Invoices are only exported to a folder, not sent via Zalo | Accepted | 2026-11-11 |
 | ADR-13 | Detailed rental data is kept for 3 months only | Superseded by ADR-27 | 2026-11-11 |
 | ADR-14 | English for all project text | Accepted | 2026-11-11 |
@@ -28,13 +28,17 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 | ADR-22 | Sentiment and panic as a separate market-state signal | Accepted | 2026-11-13 |
 | ADR-23 | Quantitative layer: statistics and ML on past data, agents interpret and challenge | Proposed | 2026-11-13 |
 | ADR-24 | Indicator trust that changes over time and by regime, earned from past results | Proposed | 2026-11-13 |
-| ADR-25 | Microservices split by business area: assistant, rental, market, finance | Accepted; reminders and to-dos moved by ADR-28, retention changed by ADR-27 | 2026-11-18 |
-| ADR-26 | Monorepo with one folder per service under `services/` | Accepted; `assistant` moved to `apps/` by ADR-30 | 2026-11-18 |
+| ADR-25 | Microservices split by business area: assistant, rental, market, finance | Accepted; reminders and to-dos moved by ADR-28, retention changed by ADR-27, identity and LLM rules changed by ADR-34 | 2026-11-18 |
+| ADR-26 | Monorepo with one folder per service under `services/` | Accepted; `assistant` moved to `apps/` by ADR-30, Python tooling replaced by ADR-33 | 2026-11-18 |
 | ADR-27 | Rental keeps readings and bills for 12 months, meter-book photos for 3 | Accepted | 2026-11-18 |
 | ADR-28 | The planner belongs to the study app (own repository, .NET); the assistant is its client | Accepted | 2026-11-18 |
 | ADR-29 | Telegram webhook in every environment, ready for several replicas | Superseded by ADR-31 | 2026-11-18 |
 | ADR-30 | Apps in `apps/`, business services in `services/` | Accepted | 2026-11-19 |
 | ADR-31 | Telegram stays on long polling; one owner, one process | Accepted | 2026-11-19 |
+| ADR-32 | Two tiers of bots: a Secretary that routes, specialists that hold the tools | Accepted | 2026-11-27 |
+| ADR-33 | C# .NET is the main language; the code restarts from scratch | Accepted | 2026-11-27 |
+| ADR-34 | Service boundaries: data only through APIs, sensitive data away from AI | Accepted | 2026-11-27 |
+| ADR-35 | Personal scope, home server, architecture freeze | Accepted | 2026-11-27 |
 
 ---
 
@@ -47,6 +51,8 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 - **Trade-offs:** time spent building the scaffolding OpenClaw already has.
 
 ## ADR-02 — Python
+
+> **Superseded by ADR-33** (2026-11-27): C# .NET is the main language; Python only for `market`.
 
 - **Options:** Python, C#.
 - **Chosen:** Python.
@@ -87,6 +93,8 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 
 ## ADR-08 — Secretary + specialist bots (hub-and-spoke)
 
+> **Amended by ADR-32** (2026-11-27): the Secretary has no domain tools; specialists answer through `ask_specialist`, not an `events` table.
+
 - **Options:** (a) one bot does everything; (b) many independent bots; (c) a Secretary that drives specialist bots over shared data.
 - **Chosen:** (c), split out gradually.
 - **Why:** each area gets its own chat and its own notifications (market alerts don't get buried); the Secretary still controls everything via `ask_specialist`.
@@ -107,6 +115,8 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 - **Revisit:** when building the multi-agent forecasting project.
 
 ## ADR-11 — Run locally during development, AWS VPS once stable
+
+> **Superseded by ADR-35** (2026-11-27): production runs on the home server.
 
 - **Chosen:** the Mac during development; a 1–2 GB RAM VPS on AWS once phase 3 is stable.
 - **Why:** the bot only needs a few hundred MB of RAM because the LLM runs via API; practise AWS skills.
@@ -388,3 +398,72 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
   - Conversation state still lives in the database, not in memory, so a restart loses nothing.
 - **Why:** the reasons for ADR-29 (replicas, serverless, load balancer) do not apply to a single-owner bot. Polling needs only outgoing HTTPS, so the home server opens no port to the internet: less to configure and less to attack. Long polling holds the request open until a message arrives, so replies are just as fast.
 - **Trade-offs:** `assistant` cannot run more than one copy per bot; if that is ever needed, a new ADR brings webhooks back (ADR-29 has the design). Two bots to manage (dev and real). Each poll is an open outgoing connection that the server keeps up.
+
+## ADR-32 — Two tiers of bots: a Secretary that routes, specialists that hold the tools
+
+- **Context:** in ADR-08 the Secretary had its own tools (reminders, tasks, calendar) and could also call specialists. More areas are coming (life, rental, finance, market, later more), and a bot that holds every tool gets a long tool list: more tokens per call and a worse choice of tool. Huy also wants to talk to each specialist directly, like asking the right department instead of the front desk.
+- **Options:** (a) keep ADR-08 as it is; (b) one bot with every tool, and the router picks a subset per message; (c) two tiers: a Secretary with no domain tools, and specialists that own the tools.
+- **Chosen:** (c). This amends ADR-08.
+  - **Orchestrator tier, the Secretary:** no domain tools. It has a directory of specialists (name and what each one handles) and one tool, `ask_specialist`. It splits a request that spans several areas, asks each specialist, and combines the answers.
+  - **Specialist tier:** `life`, `rental`, `finance`, `market`, and more later. Each one holds the tools of its area and is its own Telegram bot, so Huy can chat with it directly.
+  - **All bots live in `apps/assistant`:** one bot = one persona file (`config/personas/<name>`) + one bot token. One codebase; one process per bot token (ADR-31). A new bot needs no new app.
+  - **Tool rules:**
+    - a **write** tool only acts on the specialist's own service (the rental bot writes to `rental`, never to `finance`);
+    - **read-only** tools on other services are allowed, the fast path (the finance bot may read rent income from `rental`);
+    - specialists never call each other; work across areas goes through the Secretary.
+  - A specialist's answer goes back to the Secretary as the result of `ask_specialist`. This replaces ADR-08's rule that specialists report back through an `events` table.
+- **Why:** each bot sees a short, relevant tool list, so tool choice stays good as areas grow; each area's tools stay apart; Huy can go straight to the right bot.
+- **Trade-offs:** a question that goes through the Secretary costs at least two LLM calls; one token per bot (plus a dev bot each) to manage; the directory descriptions must stay accurate or the Secretary asks the wrong specialist.
+
+## ADR-33 — C# .NET is the main language; the code restarts from scratch
+
+- **Context:** ADR-02 chose Python. Huy studies C# at university and is aiming for jobs in Australia where .NET is widely used. He can read the Python code but found it hard to write new code in it, most commits so far reshaped the structure, and most of the code is still `TODO` stubs. The study app (ADR-28) is already .NET.
+- **Options:** (a) keep Python; (b) C# only for new parts, Python stays; (c) C# for everything except where Python clearly wins, and restart the code.
+- **Chosen:** (c). This supersedes ADR-02.
+  - **C#:** `apps/assistant`, `services/rental`, `services/finance`, later `apps/rental-web`.
+  - **Python:** only `services/market` (data, statistics, machine learning; ADR-23). Any other Python part needs a new ADR.
+  - **Restart in this repository:** the Python code of `assistant`, `rental` and `finance` is removed in one commit; git history keeps it. Older ADRs stay as history; their Python paths, libraries and tools (Pydantic, import-linter, ruff, python-telegram-bot) are historical.
+  - **Design that stays:** the 7-step pipeline (ADR-05), Policy and `RiskLevel` (ADR-06), routing before the loop (ADR-07), our own agent loop (ADR-10), Clean Architecture rings (ADR-16, ADR-19), the monorepo (ADR-26), `apps/` and `services/` (ADR-30), long polling (ADR-31).
+  - **.NET layout:** each app and service has its own solution so it builds alone, with one project per ring (`<Name>.Domain`, `<Name>.Application`, `<Name>.Infrastructure`, and an entry point such as `<Name>.Bot` or `<Name>.Api`) plus test projects. Project references enforce the rings (Domain references nothing; nothing references the entry point), replacing import-linter. Details are written with the skeleton.
+  - **Main libraries:** the official Anthropic C# SDK, Telegram.Bot, EF Core, Grpc.AspNetCore, xUnit.
+  - **Who writes what:** Huy writes all code in `src/`, the tests and `Program.cs`, and runs git and `dotnet` commands; Claude writes config, CI and docs, explains them, and reviews.
+- **Why:** practise the language of university and the job market; go deep in one ecosystem instead of shallow in two; types catch mistakes at build time; the same stack as the study app.
+- **Trade-offs:** the Python work is thrown away and the first working bot comes later; .NET has fewer ready-made AI agent libraries than Python, which matters little because we write our own loop (ADR-10); two languages in one repository means two toolchains in CI.
+
+## ADR-34 — Service boundaries: data only through APIs, sensitive data away from AI
+
+- **Context:** two tiers of bots (ADR-32) and several services raised new questions: may services call each other, should there be a shared database or copies of data, where do ID-card numbers go, where may an LLM run, which format goes between parts, and is a sign-in service needed. The choice of microservices was also questioned again.
+- **Chosen:**
+  - **Microservices stay (ADR-25).** Each app and service has its own process, database, database user (granted only on its own database), build and deploy, so one can be changed, built or broken without breaking the others. A modular monolith was considered again and rejected for this reason.
+  - **Calls:** gRPC with contracts in `proto/`. Apps call services. A service may call another service's **read** API directly; writes go only through the service that owns the data; no call cycles.
+  - **Data:** a service's database is internal. Shared data leaves only through its API. No shared database and no copies: Finance reads rent income from Rental's API when it needs it, so retention (ADR-27, 12 months) lives in one place.
+  - **Sensitive data** (ID-card numbers and photos):
+    - only through an owner-only endpoint in `rental`, used only by `rental-web`;
+    - every read is logged (audit);
+    - numbers are masked by default and shown in full only on request;
+    - stored encrypted;
+    - never in a prompt, LLM call, tool result, Telegram message or log.
+  - **No identity service:** sign-in lives in `apps/rental-web` (ASP.NET Core Identity) when it is built. This drops the `identity` service planned in ADR-25.
+  - **Where AI runs:**
+    - agents (an LLM with tools in a loop) live only in `apps/assistant`;
+    - a bot uses the LLM to turn messy input (a photo, free text) into structured data before it calls a tool;
+    - a service may call an LLM as a plain function in a background job (for example market sentiment, ADR-22), behind a port, with its own budget, and never with sensitive data.
+    This refines ADR-25's "the LLM stays in `assistant`".
+  - **Formats:**
+    - the LLM returns JSON that is checked against a schema (tool use or structured output);
+    - services exchange protobuf over gRPC;
+    - files (photos, invoices) are stored by the service that owns them and passed by id;
+    - plain text is only for people.
+    Data made by AI carries `confidence`, `source` and `confirmed` (false until Huy confirms).
+- **Why:** each part builds, deploys and fails alone; one owner per piece of data, so no copies drift apart; the most personal data never reaches a third party or a chat app.
+- **Trade-offs:** when a service is down, reads from it fail, so tools must say so ("can't reach rental, try again later"); no joins across services; the owner-only endpoint, audit and encryption are extra work.
+
+## ADR-35 — Personal scope, home server, architecture freeze
+
+- **Context:** discussions drifted to selling the rental part to other landlords, a company brand and app stores. ADR-11 planned an AWS VPS, but Huy now has a home server. Many commits reshaped the structure before any feature worked.
+- **Chosen:**
+  - **Personal only:** one owner (Huy); family members later through `rental-web`. No preparation for other users (no `landlord_id`), no SaaS, no app stores. A rental product for other people would be a separate app in a separate repository.
+  - **Home server:** apps and services run on the home server (an ASUS TUF laptop with Ubuntu). Long polling needs only outgoing HTTPS (ADR-31), so no port is opened to the internet. This supersedes ADR-11. AWS practice moves to the study app (ADR-28).
+  - **Architecture freeze:** no new structure decisions until (1) a bot answers a real Telegram message with Claude and (2) rent is billed once from start to finish. New ideas go to [ideas.md](ideas.md). Choices inside the design (a library, a table, a tool) are still made as they come.
+- **Why:** a clear scope stops design work that serves no real need; the home server costs nothing per month; the freeze turns effort into working features.
+- **Trade-offs:** the home server is a single point of failure (power, internet, disk), so backups and a restart plan in the runbook matter; ideas that need a structure change wait until the freeze ends.
