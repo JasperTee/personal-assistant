@@ -12,7 +12,14 @@ services/*/data/*
 *.sqlite
 *.db
 
-# Python
+# .NET build output and local tools
+bin/
+obj/
+TestResults/
+*.user
+.vs/
+
+# Python (services/market)
 __pycache__/
 *.py[cod]
 .venv/

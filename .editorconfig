@@ -1,0 +1,65 @@
+# code style for every file in the repository; the .NET build checks the C# rules
+# (EnforceCodeStyleInBuild in Directory.Build.props)
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,yaml,yml,xml,csproj,props,slnx}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+# one namespace line at the top of the file, not a block around the whole file
+csharp_style_namespace_declarations = file_scoped:warning
+
+# usings outside the namespace, System first
+csharp_using_directive_placement = outside_namespace:warning
+dotnet_sort_system_directives_first = true
+
+# always braces, even for one-line if/for
+csharp_prefer_braces = true:warning
+
+# naming (docs/conventions.md §1)
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_style.begins_with_i.required_prefix = I
+dotnet_naming_style.begins_with_i.capitalization = pascal_case
+dotnet_naming_rule.interfaces_begin_with_i.symbols = interfaces
+dotnet_naming_rule.interfaces_begin_with_i.style = begins_with_i
+dotnet_naming_rule.interfaces_begin_with_i.severity = warning
+
+dotnet_naming_symbols.types_and_members.applicable_kinds = class, struct, enum, delegate, method, property, event
+dotnet_naming_style.pascal.capitalization = pascal_case
+dotnet_naming_rule.types_and_members_are_pascal.symbols = types_and_members
+dotnet_naming_rule.types_and_members_are_pascal.style = pascal
+dotnet_naming_rule.types_and_members_are_pascal.severity = warning
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel.required_prefix = _
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+dotnet_naming_rule.private_fields_are_underscore_camel.symbols = private_fields
+dotnet_naming_rule.private_fields_are_underscore_camel.style = underscore_camel
+dotnet_naming_rule.private_fields_are_underscore_camel.severity = warning
+
+dotnet_naming_symbols.locals_and_parameters.applicable_kinds = parameter, local
+dotnet_naming_style.camel.capitalization = camel_case
+dotnet_naming_rule.locals_and_parameters_are_camel.symbols = locals_and_parameters
+dotnet_naming_rule.locals_and_parameters_are_camel.style = camel
+dotnet_naming_rule.locals_and_parameters_are_camel.severity = warning
+
+[*.cs]
+# CA1848 asks for LoggerMessage source generators on every log call; too heavy while learning,
+# so it shows as a hint in the editor but doesn't stop the build
+dotnet_diagnostic.CA1848.severity = suggestion
+
+[*.py]
+# Python (services/market) follows PEP 8 through Ruff
+indent_size = 4
