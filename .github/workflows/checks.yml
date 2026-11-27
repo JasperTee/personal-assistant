@@ -6,15 +6,46 @@ on:
     branches: [main]  # and after merging into main
 
 jobs:
-  # one job per app and service (ADR-26, ADR-30); later: run only what a PR changes (paths filters)
-  check:
+  # .NET apps and services: one job per solution (ADR-33); later: run only what a PR changes
+  dotnet:
     runs-on: ubuntu-latest  # a fresh Linux machine from GitHub
 
     strategy:
-      fail-fast: false  # finish every service, so one PR shows all failures
+      fail-fast: false  # finish every solution, so one PR shows all failures
       matrix:
-        path: [apps/assistant, services/rental, services/market, services/finance]
-    name: check (${{ matrix.path }})
+        solution: [apps/assistant/Assistant.slnx]
+    name: dotnet (${{ matrix.solution }})
+
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Install the .NET SDK from global.json
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore packages
+        run: dotnet restore ${{ matrix.solution }}
+
+      - name: Check formatting and style (.editorconfig)
+        run: dotnet format ${{ matrix.solution }} --verify-no-changes --no-restore
+
+      - name: Build (warnings are errors, Directory.Build.props)
+        run: dotnet build ${{ matrix.solution }} --no-restore --configuration Release
+
+      - name: Run tests
+        run: dotnet test ${{ matrix.solution }} --no-build --configuration Release
+
+  # Python services: only market (ADR-33)
+  python:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        path: [services/market]
+    name: python (${{ matrix.path }})
 
     defaults:
       run:
@@ -39,14 +70,14 @@ jobs:
         run: lint-imports
 
       - name: Run tests
-        # exit code 5 = no tests collected yet (stub services); any other failure still fails
+        # exit code 5 = no tests collected yet; any other failure still fails
         run: pytest || [ $? -eq 5 ]
 
-  # "checks" is the required check on main (ADR-18): green only if every app and service job is green
+  # "checks" is the required check on main (ADR-18): green only if every job above is green
   checks:
     runs-on: ubuntu-latest
-    needs: check
-    if: always()  # still runs when a service job fails, so the result is reported
+    needs: [dotnet, python]
+    if: always()  # still runs when a job fails, so the result is reported
     steps:
       - name: All apps and services passed
-        run: test "${{ needs.check.result }}" = "success"
+        run: test "${{ needs.dotnet.result }}" = "success" && test "${{ needs.python.result }}" = "success"
