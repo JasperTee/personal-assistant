@@ -1,93 +1,95 @@
 # Naming conventions
 
 One name for one idea, everywhere: code, database, config, docs. If two names mean the same thing, one of them is wrong.
-Base rules come from [PEP 8](https://peps.python.org/pep-0008/#naming-conventions); Ruff checks them (`N` rules in `pyproject.toml`). The project-specific rules below are checked in code review.
+C# code follows the [.NET naming guidelines](https://learn.microsoft.com/dotnet/standard/design-guidelines/naming-guidelines); the rules in the root `.editorconfig` make the build fail when a name breaks them. Python in `services/market` follows PEP 8 (Ruff). The project-specific rules below are checked in code review.
 
 ## 1. Case
 
 | What | Style | Example |
 | --- | --- | --- |
-| Class, Pydantic model, enum, Protocol | `PascalCase` | `ToolCall`, `RiskLevel`, `LLMProvider` |
-| Function, method, variable, field, parameter | `snake_case` | `build_context`, `received_at` |
-| Constant (module level) | `UPPER_SNAKE_CASE` | `MAX_ITERATIONS` |
-| Enum member | `UPPER_SNAKE_CASE` | `RiskLevel.WRITE_SELF` |
-| Module / file, folder | `snake_case`, short | `agent_loop.py`, `context_builder.py` |
-| Private (internal to a module/class) | leading `_` | `_parse_update` |
+| Class, record, struct, enum, namespace | `PascalCase` | `ToolCall`, `RiskLevel`, `Assistant.Domain` |
+| Interface | `I` + `PascalCase` | `ILlmProvider` |
+| Method, property, event, public constant | `PascalCase` | `BuildContext`, `ReceivedAt`, `MaxIterations` |
+| Enum member | `PascalCase` | `RiskLevel.WriteSelf` |
+| Parameter, local variable | `camelCase` | `toolCall`, `receivedAt` |
+| Private field | `_camelCase` | `_client`, `_maxTokens` |
+| File | the type it holds, one public type per file | `ToolCall.cs`, `ClaudeLlmProvider.cs` |
+| Project | `<App>.<Ring>` | `Assistant.Application` |
 | DB table | `snake_case`, plural | `messages`, `run_logs` |
-| DB column | same name as the model field | `received_at` |
-| Config key (YAML) | `snake_case` | `max_iterations` |
-| Environment variable | `UPPER_SNAKE_CASE` | `TELEGRAM_TOKEN_SECRETARY` |
+| DB column, `.proto` field, YAML key | `snake_case`, same words as the C# property | `received_at` ↔ `ReceivedAt` |
+| JSON at the edge (REST, web) | `camelCase` | `receivedAt` |
+| Environment variable | .NET configuration path, `__` between sections | `Anthropic__ApiKey` |
 | Tool name | `<area>.<verb>`, lowercase | `reminders.create`, `expenses.summary` |
 | Persona id | lowercase, one word | `secretary`, `rental` |
 
-Acronyms in `PascalCase` stay upper case: `LLMProvider`, `HTTPClient` (not `LlmProvider`).
+Acronyms longer than two letters are written like words: `LlmProvider`, `HttpClient`, `SqliteRepository` (not `LLMProvider`); two-letter ones stay upper case: `IO`.
 
 ## 2. Identifiers (ids)
 
-- An object's **own** id is always `id`.
-- A **reference** to another object is `<object>_id`, where `<object>` is that class's name in `snake_case`.
-- Never `Id`, `ID`, `toolId`, or a bare `call_id` when the class is `ToolCall`.
+- An object's **own** id is always `Id` (`id` in the database and `.proto`).
+- A **reference** to another object is `<Object>Id`, where `<Object>` is that class's name: `ToolCallId` (`tool_call_id`).
+- Never `ID`, `ToolId`, or a bare `CallId` when the class is `ToolCall`.
 
 | Class | Own id | References |
 | --- | --- | --- |
-| `ToolCall` | `id` | — |
-| `ToolResult` | — | `tool_call_id` (→ `ToolCall.id`) |
-| `IncomingMessage` | — | `sender_id` (→ the user who sent it), `run_id` |
+| `ToolCall` | `Id` | — |
+| `ToolResult` | — | `ToolCallId` (→ `ToolCall.Id`) |
+| `IncomingMessage` | — | `SenderId` (→ the user who sent it), `RunId` |
 | DB `messages` | `id` | `user_id` (→ `users.id`), `run_id` |
 
-Exception: an id that comes from an outside system keeps its source in the name: `telegram_id`.
+Exception: an id that comes from an outside system keeps its source in the name: `TelegramId`.
 
 ## 3. Suffixes that carry meaning
 
-| Kind of value | Suffix | Example |
-| --- | --- | --- |
-| Moment in time (`datetime`, time-zone aware) | `_at` | `received_at`, `remind_at`, `expires_at` |
-| Calendar date (`date`) | `_on` | `spent_on`, `due_on` |
-| Duration | unit | `duration_ms`, `cooldown_hours` |
-| Money | currency | `amount_aud`, `cost_usd` |
-| Count | `_count` | `retry_count` |
+| Kind of value | C# type | Suffix | Example |
+| --- | --- | --- | --- |
+| Moment in time | `DateTimeOffset` (stored in UTC) | `At` | `ReceivedAt`, `RemindAt`, `ExpiresAt` |
+| Calendar date | `DateOnly` | `On` | `SpentOn`, `DueOn` |
+| Duration | `TimeSpan`, or a number with its unit | unit | `Timeout`, `DurationMs`, `CooldownHours` |
+| Money | `decimal` (`long` cents in `.proto`) | currency | `AmountAud`, `CostUsd`, `TotalCents` |
+| Count | `int` | `Count` | `RetryCount` |
 
-A name without a unit (`timeout`, `amount`) is not allowed when the value has one.
+A number without a unit (`Timeout` as an `int`, `Amount`) is not allowed when the value has one. Never `double` for money.
 
 ## 4. Booleans
 
-Read as a yes/no question: `is_`, `has_`, `can_`, `should_`.
-`is_error`, `is_enabled`, `has_attachments` — not `error`, `enabled`, `ok`.
+Read as a yes/no question: `Is`, `Has`, `Can`, `Should`.
+`IsError`, `IsEnabled`, `HasAttachments` — not `Error`, `Enabled`, `Ok`.
 
 Exception: on/off switches under `proactive:` in persona YAML are feature names (`morning_brief: true`).
 
 ## 5. Collections
 
-Plural noun: `tool_calls`, `messages`, `allowed_tools`. A dict mapping keys to values: `<value>_by_<key>`, e.g. `persona_by_token`.
+Plural noun: `ToolCalls`, `Messages`, `AllowedTools`. A dictionary from keys to values: `<Value>By<Key>`, e.g. `PersonaByToken`. Data contracts expose read-only collections (`IReadOnlyList<T>`).
 
-## 6. Functions and methods
+## 6. Methods
 
 Start with a verb. The same verb always means the same thing:
 
 | Verb | Meaning | Returns |
 | --- | --- | --- |
-| `get_` | Fetch one; it must exist | the object, raises if missing |
-| `find_` | Look for one | the object or `None` |
-| `list_` | Fetch many | a list (may be empty) |
-| `create_` / `save_` | Insert new / insert-or-update | the stored object |
-| `update_` | Change an existing one | the updated object |
-| `delete_` | Remove | `None` |
-| `build_` | Assemble an object in memory, no I/O | the object |
-| `parse_` | Turn raw data into a model | the model |
-| `to_` | Convert to another format | the converted value |
-| `check_` / `validate_` | Verify, raise on failure | `None` |
-| `load_` | Read config or files from disk at start-up | the typed object |
-| `generate_` | Ask an LLM to produce something | the LLM's response |
-| `send_` | Deliver something outside (a chat message) | `None` |
-| `handle_` | Entry point a framework calls for an event | `None` |
+| `Get` | Fetch one; it must exist | the object, throws if missing |
+| `Find` | Look for one | the object or `null` |
+| `List` | Fetch many | a list (may be empty) |
+| `Create` / `Save` | Insert new / insert-or-update | the stored object |
+| `Update` | Change an existing one | the updated object |
+| `Delete` | Remove | nothing |
+| `Build` | Assemble an object in memory, no I/O | the object |
+| `Parse` | Turn raw data into a model | the model |
+| `To` | Convert to another format | the converted value |
+| `Check` / `Validate` | Verify, throw on failure | nothing |
+| `Load` | Read config or files from disk at start-up | the typed object |
+| `Generate` | Ask an LLM to produce something | the LLM's response |
+| `Send` | Deliver something outside (a chat message) | nothing |
+| `Handle` | Entry point a framework calls for an event | nothing |
 
-Async functions are named like sync ones (no `_async` suffix).
+Methods that return `Task` end in `Async` (`GenerateAsync`, `SendAsync`) and take a `CancellationToken` as the last parameter.
 
 ## 7. Classes
 
-- Models (data) are nouns: `ToolCall`, `AgentReply`.
-- Interfaces (Protocols in `domain/ports.py`) are the role: `LLMProvider`, `Repository`, `Channel`.
-- Implementations are `<Technology><Role>`: `ClaudeLLMProvider`, `FakeLLMProvider`, `SQLiteRepository`, `TelegramChannel`.
+- Models (data) are nouns, written as immutable `record`s: `ToolCall`, `AgentReply`.
+- Interfaces (ports) are `I` + the role: `ILlmProvider`, `IRepository`, `IChannel`.
+- Implementations are `<Technology><Role>`: `ClaudeLlmProvider`, `FakeLlmProvider`, `SqliteRepository`, `TelegramChannel`.
 - No `Manager`, `Helper`, `Utils`, `Data`, `Info` suffixes — they say nothing.
 
 ## 8. Words
@@ -95,66 +97,60 @@ Async functions are named like sync ones (no `_async` suffix).
 - English only (ADR-14), no abbreviations except well-known ones: `id`, `url`, `db`, `llm`, `ms`.
 - Use the project's words consistently: **persona** (not bot/agent in code), **tool** (not function/skill), **run** (one pass through the pipeline), **owner** (Huy), **tenant**.
 
-## 9. Structure (ADR-16, ADR-19, ADR-25, ADR-26, ADR-30)
+## 9. Structure (ADR-16, ADR-19, ADR-30, ADR-33)
 
-Apps and services first: `apps/<name>/` for what people use (`assistant`, later `rental-web`), `services/<name>/` for business areas (`rental`, `market`, `finance`). None imports another's package; import-linter checks it. Apps call services, services never call apps.
+Apps and services first: `apps/<name>/` for what people use (`assistant`, later `rental-web`), `services/<name>/` for business areas (`rental`, `market`, `finance`). Each has its own solution and builds alone; none references another's projects. Apps call services, services never call apps.
 
-Inside `apps/assistant/src/assistant/`: layer first, then area. The path tells you the layer and the job:
+Inside `apps/assistant/`: one project per ring, then folders by kind and area. The path tells you the ring and the job:
 
-| What | Path | Example |
+| What | Path (under `src/`) | Example |
 | --- | --- | --- |
-| Data contract shared by all | `domain/models.py` | `ToolCall` |
-| Business rules of another area | its own service, `src/<service>/domain/` | `services/rental/src/rental/domain/billing.py` |
-| Interface (Protocol) | `domain/ports.py` | `LLMProvider` |
-| Channel input (MVC controller) | `entrypoints/<channel>/controller.py` | `TelegramController` |
-| Channel output (MVC view) | `entrypoints/<channel>/presenter.py` | `TelegramPresenter` |
-| Use case (pipeline step) | `application/<step>.py` | `application/pipeline.py` → `Pipeline` |
-| Policy (rules) | `application/policy/<rule>.py` | `application/policy/guard.py` |
-| Tool | `application/tools/<area>/<verb>.py` — same as the tool name | `reminders.create` → `application/tools/reminders/create.py` |
-| Port implementation | `infrastructure/<kind>/<technology>.py` | `infrastructure/llm/claude.py` → `ClaudeLLMProvider` |
+| Data contract shared by all | `Assistant.Domain/Models/` | `ToolCall.cs` |
+| Interface (port) | `Assistant.Domain/Ports/` | `ILlmProvider.cs` |
+| Business rules of another area | its own service | `services/rental/src/Rental.Domain/` |
+| Use case (pipeline step) | `Assistant.Application/` | `Pipeline.cs`, `AgentLoop.cs` |
+| Policy (rules) | `Assistant.Application/Policy/` | `AccessPolicy.cs`, `Guard.cs` |
+| Tool | `Assistant.Application/Tools/<Area>/` | `reminders.create` → `Tools/Reminders/CreateReminderTool.cs` |
+| Port implementation | `Assistant.Infrastructure/<Kind>/` | `Llm/ClaudeLlmProvider.cs` |
+| Channel input (MVC controller) | `Assistant.Bot/<Channel>/` | `Telegram/TelegramController.cs` |
+| Channel output (MVC view) | `Assistant.Bot/<Channel>/` | `Telegram/TelegramPresenter.cs` |
+| Composition root | `Assistant.Bot/Program.cs` | registers the real classes for dependency injection |
 
-Import only downwards: `main` → `entrypoints | infrastructure` → `application` → `domain`. Inside `application/`: `pipeline` → `agent_loop | context_builder | postprocess | router` → `policy | tools`. `lint-imports` fails the check otherwise.
+Namespaces follow the folders: `Assistant.Application.Tools.Reminders`.
 
-### Same rings in every service and both languages (ADR-26)
+Dependencies point inward only, enforced by project references (a project can't use a class from a project it doesn't reference):
 
-Every service, in this repository and in the study app (.NET, its own repository), has the same four rings and the same composition root. Inside one language the names are identical; across languages they map one to one.
+```text
+Assistant.Bot ──► Assistant.Infrastructure ──► Assistant.Application ──► Assistant.Domain
+      └──────────────────────────────────────────────►┘
+```
 
-| Ring | Python app or service (`apps/<name>/src/<name>/`, `services/<name>/src/<name>/`) | .NET project (`src/<App>.<Ring>/`) |
-| --- | --- | --- |
-| Entities, business rules | `domain/` | `<App>.Domain` |
-| Use cases, ports | `application/` | `<App>.Application` |
-| Database, LLM, files, other services' clients | `infrastructure/` | `<App>.Infrastructure` |
-| Ways in: Telegram, scheduler, gRPC server, HTTP | `entrypoints/<channel>/` | `<App>.Api` (HTTP, gRPC) or `<App>.Web` (MVC, SignalR) |
-| Composition root | `main.py` | `Program.cs` in `<App>.Api` / `<App>.Web` |
+Domain references nothing; nothing references `Assistant.Bot`. Inside `Assistant.Application` the order is checked in review: `Pipeline` → `AgentLoop | ContextBuilder | PostProcess | Router` → `Policy | Tools`.
 
-- Dependencies point inward only; a test in CI enforces it (import-linter in Python, an architecture test such as NetArchTest in .NET).
-- Inside a ring: layer first, then area (`application/tools/reminders/create.py` ↔ `Application/Reminders/CreateReminder.cs`).
-- Tests mirror the source tree (`tests/application/...` ↔ `tests/<App>.Application.Tests/...`).
-- Same words and naming rules (§8, `id`, `<class>_id`, `is_`, unit suffixes), each language's own casing in code, because each linter enforces its own (PEP 8 via Ruff `N`; .NET naming rules via IDE1006): `tenant_id`, `is_active`, `amount_vnd` ↔ `TenantId`, `IsActive`, `AmountVnd`.
-- Where data crosses languages, one casing for everyone; the tools convert to each language's casing:
+### Same rings in every app and service, and in the study app
 
-  | Place | Casing | Example |
-  | --- | --- | --- |
-  | `.proto` fields (gRPC) | `snake_case` (Buf / Google style); generated code becomes `tenant_id` in Python, `TenantId` in C# | `tenant_id` |
-  | Database columns | `snake_case` (PostgreSQL habit); EF Core uses a snake_case naming convention | `tenant_id` |
-  | JSON at the edge (REST, web) | `camelCase` (Google JSON style, ASP.NET Core default) | `tenantId` |
-- Same data rules: ids are UUIDs, times stored in UTC, every table has `id` and `created_at`, schema changes only through migrations (Alembic ↔ EF Core migrations), one database per service.
+Every .NET app and service here, and the study app (its own repository), has the same rings: `<App>.Domain`, `<App>.Application`, `<App>.Infrastructure`, and an entry point (`<App>.Bot`, `<App>.Api` for HTTP and gRPC, `<App>.Web` for MVC), with `Program.cs` as the composition root. `services/market` (Python) maps them one to one to `domain/`, `application/`, `infrastructure/`, `entrypoints/` and `main.py`, checked by import-linter.
+
+- Tests mirror the source tree (`src/Assistant.Application/Policy/Guard.cs` ↔ `tests/Assistant.Application.Tests/Policy/GuardTests.cs`).
+- Same words and naming rules in both languages (§2–§5), each in its own casing: `TenantId`, `IsActive`, `AmountAud` ↔ `tenant_id`, `is_active`, `amount_aud`.
+- Where data crosses languages, one casing for everyone (§1): `snake_case` in `.proto` and the database, `camelCase` in edge JSON; the tools convert (generated gRPC code, an EF Core snake_case naming convention).
+- Same data rules: ids are UUIDs (`Guid`), times stored in UTC, every table has `id` and `created_at`, schema changes only through migrations (EF Core; Alembic in `market`), one database per service.
 - Same process: §11 commits, §13 branches and pull requests, a required `checks` CI job, the same `docs/` set (README, CHANGELOG, decisions, devlog, conventions, requirements, data dictionary, threat model, runbook).
 - When the study app repository is created, copy this file there and keep both copies in step.
 
 ## 10. Tests
 
-- Each service's `tests/` mirrors its `src/<service>/`: `apps/assistant/src/assistant/application/policy/guard.py` → `apps/assistant/tests/application/policy/test_guard.py`.
-- One `Test<ClassName>` class per class under test; test names say the behaviour: `test_<what>_<expected>`, e.g. `test_tool_call_rejects_wrong_types`.
-- Shared fixtures in `tests/conftest.py`; no `__init__.py` in `tests/`.
-
+- One test project per ring that has logic: `tests/<App>.<Ring>.Tests`, mirroring the folders of `src/<App>.<Ring>`.
+- One test class per class under test, named `<ClassName>Tests` (`GuardTests`).
+- xUnit: a test is a method marked `[Fact]` (or `[Theory]` with `[InlineData]` for several inputs); its name says the behaviour: `<Method>_<Situation>_<Expected>`, e.g. `Check_RemindAtInThePast_ReturnsError`.
+- Arrange, act, assert, with a blank line between them. Fake data only, never real tenant data.
 
 ## 11. Commit messages
 
 [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <summary>`.
 
 - `summary`: imperative, lower case, no final period, ≤ 72 characters — "add reminder tool", not "Added reminder tool."
-- `scope` (optional): the layer or area touched — `domain`, `entrypoints`, `application`, `policy`, `tools`, `infrastructure`, `config`, `docs`, or an area such as `rental`, `reminders`.
+- `scope` (optional): the ring or area touched — `domain`, `application`, `infrastructure`, `bot`, `policy`, `tools`, `config`, `docs`, or an area such as `rental`, `reminders`.
 
 | Type | Use for | Example |
 | --- | --- | --- |
@@ -164,23 +160,22 @@ Every service, in this repository and in the study app (.NET, its own repository
 | `refactor` | Restructuring without changing behaviour | `refactor: split tools into area folders` |
 | `docs` | Docs only | `docs: add ADR-16` |
 | `style` | Formatting, comment / docstring wording; no code change | `style: start docstrings upper case, comments lower case` |
-| `chore` | Tooling, dependencies, config files that don't change behaviour | `chore: add import-linter` |
-| `build` / `ci` | Packaging / CI pipeline | `ci: run ruff and pytest on push` |
+| `chore` | Tooling, dependencies, config files that don't change behaviour | `chore: add .editorconfig` |
+| `build` / `ci` | Build settings, packaging / CI pipeline | `ci: build and test the .NET solutions` |
 
-One commit, one type. If a change needs two types, make two commits. Breaking change: add `!` after the type (`feat(domain)!: rename ToolResult.content`).
+One commit, one type. If a change needs two types, make two commits. Breaking change: add `!` after the type (`feat(domain)!: rename ToolResult.Content`).
 
-## 12. Docstrings and comments
+## 12. Doc comments and comments
 
 | What | Starts with | Example |
 | --- | --- | --- |
-| Docstring (module, class, function) | **Capital letter**, full sentence, ends with `.` | `"""Send the context to the LLM and return its response."""` |
-| Comment (`#`, in Python, YAML, TOML, `.env.example`) | **lower-case letter**, no final `.` | `# cannot be changed after creation` |
+| XML doc comment on a public type or member (`/// <summary>`) | **Capital letter**, full sentence, ends with `.` | `/// <summary>Send the context to the LLM and return its response.</summary>` |
+| Comment (`//` in C#, `#` in YAML, `.editorconfig`, Python) | **lower-case letter**, no final `.` | `// cannot be changed after creation` |
 
-- A docstring that starts with a code name puts a word in front: `"""Tool reminders.create (WRITE_SELF): ..."""`, `"""Tests for reminders.create: ..."""`.
-- A comment keeps the original case when it starts with a code name, literal, acronym or proper noun: `# True if the tool call failed`, `# LLM normalisation…`, `# Huy confirms`, `# EXTERNAL — awaits approval`.
+- A doc comment that starts with a code name puts a word in front: `/// <summary>Tool reminders.create (WriteSelf): ...</summary>`.
+- A comment keeps the original case when it starts with a code name, literal, acronym or proper noun: `// True if the tool call failed`, `// LLM normalisation…`, `// Huy confirms`.
 - `TODO` stays upper case so editors and `grep TODO` find it.
-- Several sentences in one comment are joined with `;`, not `. `: `# starter cases; replace with real messages`.
-- Ruff rule `D403` checks function and method docstrings; module and class docstrings and comments are checked in code review.
+- Several sentences in one comment are joined with `;`, not `. `: `// starter cases; replace with real messages`.
 - Markdown headings (`# Persona: Secretary` in `config/prompts/*.md`) are not comments.
 
 ## 13. Branches and pull requests (ADR-18)
@@ -201,9 +196,9 @@ One commit, one type. If a change needs two types, make two commits. Breaking ch
 1. Start from an up-to-date `main`: `git switch main`, `git pull`.
 2. Create the branch: `git switch -c feat/telegram-echo`.
 3. Commit in small steps (§11: one commit, one type).
-4. Before pushing, run the checks: `ruff check .`, `lint-imports`, `pytest`.
+4. Before pushing, run the checks in the solution folder (`cd apps/assistant`): `dotnet format --verify-no-changes`, `dotnet build`, `dotnet test` (in `services/market`: `ruff check .`, `lint-imports`, `pytest`).
 5. Push the branch: `git push -u origin feat/telegram-echo`.
-6. Open a PR: `gh pr create`. Title = the main change in commit format (`feat(channels): echo Telegram messages through the pipeline`); fill in the template.
+6. Open a PR: `gh pr create`. Title = the main change in commit format (`feat(bot): echo Telegram messages through the pipeline`); fill in the template.
 7. Review the diff on GitHub (Files changed), fix anything found with new commits on the same branch.
 8. Merge with **Rebase and merge** (keeps every Conventional Commit on a straight `main` history); the branch is deleted after merging.
 9. Back to `main`: `git switch main`, `git pull`, delete the local branch: `git branch -d feat/telegram-echo`.

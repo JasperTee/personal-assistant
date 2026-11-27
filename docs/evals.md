@@ -4,22 +4,24 @@ Two layers: **unit tests** (fast, use a fake LLM, cost nothing) and **evals** (r
 
 ## Unit tests — `tests/`
 
-Each service has its own `tests/` that mirrors its `src/<service>/`: the test for `apps/assistant/src/assistant/application/policy/guard.py` is `apps/assistant/tests/application/policy/test_guard.py`. Paths in the table are inside `apps/assistant/tests/` unless they name another service. Inside a file, tests are grouped in a `Test<ClassName>` class. Shared fixtures go in `tests/conftest.py`.
+Each solution has one test project per ring (`tests/<App>.<Ring>.Tests`) that mirrors that ring's folders: the test for `apps/assistant/src/Assistant.Application/Policy/Guard.cs` is `apps/assistant/tests/Assistant.Application.Tests/Policy/GuardTests.cs`. Paths in the table are inside `apps/assistant/tests/` unless they name another service. Naming of test classes and methods: [conventions.md §10](conventions.md).
 
 | File | Checks | From phase |
 | --- | --- | --- |
-| domain/test_models.py | Contracts reject wrong types, are frozen, have the right defaults | 1 |
-| entrypoints/telegram/test_controller.py | Sample Telegram JSON → `IncomingMessage` with the right persona and time | 1 |
-| entrypoints/telegram/test_presenter.py | Long replies split; pending actions get Send/Cancel buttons | 1 |
-| application/policy/test_access.py | Strangers blocked; each persona gets only its tools | 3 |
-| application/policy/test_guard.py | EXTERNAL awaits approval; FORBIDDEN rejected; bad values blocked | 3 |
-| application/tools/reminders/test_create.py | A past `remind_at` → `is_error` + the rule as hint | 3 |
-| application/test_agent_loop.py | Stops when out of iterations; a predictable tool error returns a hint, an unexpected one doesn't crash the loop; missing parameters → ask back | 2–3 |
-| services/rental/tests/domain/test_billing.py | Readings × unit prices → the right bill for every room | MVP |
+| Assistant.Domain.Tests/Models/ModelTests.cs | Contracts can't be changed after creation and have the right defaults | 1 |
+| Assistant.Bot.Tests/Telegram/TelegramControllerTests.cs (project added with the Telegram code) | Sample Telegram update → `IncomingMessage` with the right persona and time | 1 |
+| Assistant.Bot.Tests/Telegram/TelegramPresenterTests.cs | Long replies split; pending actions get Send/Cancel buttons | 1 |
+| Assistant.Application.Tests/Policy/AccessPolicyTests.cs | Strangers blocked; each persona gets only its tools | 3 |
+| Assistant.Application.Tests/Policy/GuardTests.cs | External actions await approval; Forbidden rejected; bad values blocked | 3 |
+| Assistant.Application.Tests/Tools/Reminders/CreateReminderToolTests.cs | A past `RemindAt` → `IsError` + the rule as hint | 3 |
+| Assistant.Application.Tests/AgentLoopTests.cs | Stops when out of iterations; a predictable tool error returns a hint, an unexpected one doesn't crash the loop; missing parameters → ask back | 2–3 |
+| services/rental: Rental.Domain.Tests/BillingTests.cs | Readings × unit prices → the right bill for every room | MVP |
 
-Run before every commit, together with `ruff check .` and `lint-imports`.
+Run before every commit with `dotnet test`, after `dotnet format --verify-no-changes` and `dotnet build`.
 
 ## Evals — `tests/evals.yaml`
+
+The Python version of this file was removed with the Python code (ADR-33); bring the cases back from git history (`git show 33d2244:apps/assistant/tests/evals.yaml`) when evals start.
 
 Each case has a message, a bot, and expected results (tools that must be called, tools that must not be called, content that must appear).
 
