@@ -13,16 +13,16 @@ Use when the bot behaves strangely, costs spike, or a key may have leaked.
 
 ## Running locally (phases 1–3)
 
-1. Create a Python 3.12+ virtualenv at the repo root and install each service from its `services/<name>/pyproject.toml` (commands in README.md).
+1. Install the .NET SDK 10 and build the solution (commands in README.md).
 2. Copy `apps/assistant/.env.example` → `apps/assistant/.env`, fill in the **dev bot** token and `OWNER_TELEGRAM_ID` (the real bot token is only on the server: one process per token, ADR-31).
-3. Run the Alembic migrations to create the tables in `apps/assistant/data/assistant.db`.
-4. Start the bot (long polling, ADR-31): `python -m assistant.main`; stop it with Ctrl+C.
+3. Apply the EF Core migrations to create the tables (commands arrive with the database code).
+4. Start the bot (long polling, ADR-31): `dotnet run --project src/Assistant.Bot` in `apps/assistant`; stop it with Ctrl+C.
 5. Message the dev bot on Telegram; check the rows in `messages` and `run_logs`.
 
 ## Deploying to a server *(write this when we get there)*
 
 - [ ] Create a 1–2 GB RAM AWS VPS; open only SSH and HTTPS.
-- [ ] Install Python, create a dedicated user for the bot (never run as root).
+- [ ] Install the .NET runtime, create a dedicated user for the bot (never run as root).
 - [ ] Put `.env` on the server (never copy it through Git).
 - [ ] Real bot token only in the server's `.env`; the bot polls, so no inbound port or tunnel is needed for it (ADR-31).
 - [ ] Run the bot as a service that restarts on failure.

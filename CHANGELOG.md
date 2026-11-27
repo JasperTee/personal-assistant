@@ -4,6 +4,12 @@ Record every finished phase or significant change. Newest first.
 
 ## [Unreleased]
 
+### Changed
+- The code restarts in C# .NET (ADR-33): the Python code of `assistant`, `rental` and `finance` is removed; `apps/assistant` is a .NET solution with `Assistant.Domain`, `.Application`, `.Infrastructure`, `.Bot` and two test projects. `services/market` stays Python.
+- Shared .NET build settings (`Directory.Build.props`: .NET 10, nullable, warnings as errors, recommended analyzers), SDK pinned in `global.json`, code style in `.editorconfig`, LF line endings in `.gitattributes`.
+- CI builds, checks formatting and tests each .NET solution, and keeps the Python checks for `market`; `checks` stays the required job.
+- README, conventions (C# naming, tests, doc comments), runbook, PR template and data dictionary updated for .NET.
+
 ### Decided
 - C# .NET is the main language and the code restarts from scratch in this repository (ADR-33, supersedes ADR-02); Python stays only for `market`.
 - Two tiers of bots (ADR-32, amends ADR-08): the Secretary only routes through `ask_specialist`; specialists (life, rental, finance, market) hold the tools and are their own Telegram bots.

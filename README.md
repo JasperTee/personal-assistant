@@ -7,65 +7,60 @@ A personal AI assistant that talks over Telegram. A **Secretary** bot routes eac
 
 ## Architecture at a glance
 
-Clean Architecture for the whole system; MVC only at the edge (channel controllers and presenters). A 7-step pipeline; each step belongs to one layer:
+Clean Architecture for the whole system; MVC only at the edge (channel controllers and presenters). A 7-step pipeline; each step belongs to one ring (paths under `apps/assistant/src/`):
 
-| Step | Layer | Where |
+| Step | Ring | Where |
 | --- | --- | --- |
-| 1 Receive | Channel (controller) | `entrypoints/<channel>/controller.py` |
-| 2 Check access, budget | Application (policy) | `application/policy/access.py`, `application/policy/budget.py` |
-| 3 Context, 4 Loop, 5 Post-process | Application | `application/` |
-| 4 Approve tool calls | Application (policy) | `application/policy/guard.py` |
-| 4 Run tools | Application (tools) | `application/tools/<area>/<verb>.py` |
-| 6 Send | Channel (presenter) | `entrypoints/<channel>/presenter.py` |
-| 7 Store & observe | Infrastructure | `infrastructure/` |
+| 1 Receive | Entry point (controller) | `Assistant.Bot/Telegram/TelegramController.cs` |
+| 2 Check access, budget | Application (policy) | `Assistant.Application/Policy/` |
+| 3 Context, 4 Loop, 5 Post-process | Application | `Assistant.Application/` |
+| 4 Approve tool calls | Application (policy) | `Assistant.Application/Policy/Guard.cs` |
+| 4 Run tools | Application (tools) | `Assistant.Application/Tools/<Area>/` |
+| 6 Send | Entry point (presenter) | `Assistant.Bot/Telegram/TelegramPresenter.cs` |
+| 7 Store & observe | Infrastructure | `Assistant.Infrastructure/` |
 
-Dependency rule (ADR-16, ADR-19, checked by `lint-imports`): a layer imports only the layers below it.
+Dependency rule (ADR-16, ADR-19, ADR-33): a project references only the rings inside it, so the compiler blocks a wrong dependency.
 
 ```text
-main.py                          composition root — wires concrete classes
-entrypoints/  |  infrastructure/ adapters: Telegram, scheduler | DB, LLM, config, logs
-application/                     use cases: pipeline → router, context, agent loop → policy | tools
-domain/                          data contracts, ports, business rules — imports nothing
+Assistant.Bot             composition root (Program.cs) + Telegram, scheduler
+Assistant.Infrastructure  adapters: database, LLM, config, logs, other services' clients
+Assistant.Application     use cases: pipeline → router, context, agent loop → policy | tools
+Assistant.Domain          data contracts, ports, business rules — references nothing
 ```
 
 ## Folder structure
 
-Monorepo of apps and services (ADR-25, ADR-26, ADR-30). `apps/` holds what people use (the Telegram
-assistant, later `rental-web`); `services/` holds the business areas the apps call over gRPC. Each one
-has its own `pyproject.toml`, code, tests and config, and none imports another's code. Apps call
-services; services never call apps.
+Monorepo of apps and services (ADR-26, ADR-30, ADR-34). `apps/` holds what people use (the Telegram bots, later `rental-web`); `services/` holds the business areas the apps call over gRPC. Each one has its own solution (or `pyproject.toml` for `market`), code, tests and config, and builds alone. Apps call services; services never call apps.
 
 ```text
 personal-assistant/
-├── apps/                       # what people use; calls the services
-│   └── assistant/              # Telegram bots, pipeline, LLM, personas, policy
-│       ├── config/             # personas, prompts, settings — no secrets
-│       ├── data/               # SQLite file when running locally (not committed)
-│       ├── migrations/         # Alembic
-│       ├── src/assistant/
-│       │   ├── domain/         # models.py, ports.py
-│       │   ├── entrypoints/    # telegram/, scheduler/ — controller.py, presenter.py
-│       │   ├── application/    # use cases: pipeline, router, context_builder, agent_loop, postprocess
-│       │   │   ├── policy/     # access.py, budget.py, guard.py
-│       │   │   └── tools/      # registry.py + <area>/<verb>.py (reminders/create.py)
-│       │   ├── infrastructure/ # config.py, run_logger.py, db/, llm/
-│       │   └── main.py         # composition root
-│       └── tests/              # mirrors src/ (tests/application/policy/test_guard.py) + evals.yaml
-├── services/                   # business areas; never call apps
-│   ├── rental/                 # rooms, tenants, readings, bills, invoices — src/rental/domain/
-│   ├── market/                 # market data, evidence, forecasts — src/market/domain/, config/
-│   └── finance/                # expenses, budgets, reports — src/finance/domain/
-├── docs/                       # docs that live with the code
-└── .github/workflows/          # CI: one job per app and service + the required `checks` job
+├── apps/                          # what people use; calls the services
+│   └── assistant/                 # all Telegram bots: Secretary + specialists (ADR-32)
+│       ├── Assistant.slnx         # the solution: lists the projects below
+│       ├── config/                # personas, prompts — no secrets
+│       ├── src/
+│       │   ├── Assistant.Domain/          # Models/, Ports/
+│       │   ├── Assistant.Application/     # Pipeline, AgentLoop, Policy/, Tools/<Area>/
+│       │   ├── Assistant.Infrastructure/  # Llm/, Database/, logs
+│       │   └── Assistant.Bot/             # Program.cs, Telegram/, Scheduler/
+│       └── tests/                 # one test project per ring, mirrors src/
+├── services/                      # business areas; never call apps
+│   └── market/                    # Python (ADR-33): market data, evidence, forecasts
+│                                  # rental/ and finance/ return as .NET solutions
+├── docs/                          # docs that live with the code
+├── Directory.Build.props          # build settings shared by every .NET project
+├── global.json                    # the .NET SDK version
+├── .editorconfig                  # code style; the build checks it
+└── .github/workflows/             # CI: one job per solution + market + the required `checks` job
 ```
 
 ## Running locally
 
-1. Python 3.12+; create one virtualenv at the repo root: `uv venv`.
-2. Install every service with its dev tools: `uv pip install -e "apps/assistant[dev]" -e "services/rental[dev]" -e "services/market[dev]" -e "services/finance[dev]"`.
-3. Copy `apps/assistant/.env.example` to `apps/assistant/.env` and fill in tokens and API keys.
-4. Start the bot: `python -m assistant.main` (phase 1 echoes your messages; Ctrl+C stops it).
-5. Before every commit, inside each folder you changed (`cd apps/<name>` or `cd services/<name>`): `ruff check .`, `lint-imports`, `pytest`.
+1. Install the .NET SDK 10 (`dotnet --version` should print 10.0.x; `global.json` picks the version).
+2. Build and test the assistant: `cd apps/assistant`, then `dotnet build` and `dotnet test`.
+3. Secrets on the laptop go in .NET user secrets, never in a file in the repository: `dotnet user-secrets set "<Section>:<Key>" "<value>" --project src/Assistant.Bot` (the keys arrive with the code that reads them).
+4. Start the bot: `dotnet run --project src/Assistant.Bot` (Ctrl+C stops it).
+5. Before every commit, in the solution folder: `dotnet format --verify-no-changes`, `dotnet build`, `dotnet test`. For `services/market`: `ruff check .`, `lint-imports`, `pytest` in a Python virtualenv.
 
 Step-by-step details, deployment and the **emergency shutdown**: [`docs/runbook.md`](docs/runbook.md).
 

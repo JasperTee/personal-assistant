@@ -12,9 +12,7 @@
 
 ## Checklist
 
-- [ ] `ruff check .` passes
-- [ ] `lint-imports` passes
-- [ ] `pytest` passes
+- [ ] `dotnet format --verify-no-changes`, `dotnet build` and `dotnet test` pass (market: `ruff check .`, `lint-imports`, `pytest`)
 - [ ] Tests added or updated for the change
 - [ ] Docs updated (README, docs/, ADR) if behaviour or structure changed
 - [ ] No secrets or real tenant data
