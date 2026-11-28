@@ -20,7 +20,7 @@ C# code follows the [.NET naming guidelines](https://learn.microsoft.com/dotnet/
 | JSON at the edge (REST, web) | `camelCase` | `receivedAt` |
 | Environment variable | .NET configuration path, `__` between sections | `Anthropic__ApiKey` |
 | Tool name | `<area>.<verb>`, lowercase | `reminders.create`, `expenses.summary` |
-| Persona id | lowercase, one word | `secretary`, `rental` |
+| Persona id | lowercase, one word | `secretary`, `housing` |
 
 Acronyms longer than two letters are written like words: `LlmProvider`, `HttpClient`, `SqliteRepository` (not `LLMProvider`); two-letter ones stay upper case: `IO`.
 
@@ -99,7 +99,7 @@ Methods that return `Task` end in `Async` (`GenerateAsync`, `SendAsync`) and tak
 
 ## 9. Structure (ADR-16, ADR-19, ADR-30, ADR-33)
 
-Apps and services first: `apps/<name>/` for what people use (`assistant`, later `rental-web`), `services/<name>/` for business areas (`rental`, `market`, `finance`). Each has its own solution and builds alone; none references another's projects. Apps call services, services never call apps.
+Apps and services first: `apps/<name>/` for what people use (`assistant`, later `housing-web`), `services/<name>/` for business areas (`housing`, `market`, `finance`). Each has its own solution and builds alone; none references another's projects. Apps call services, services never call apps.
 
 Inside `apps/assistant/`: one project per ring, then folders by kind and area. The path tells you the ring and the job:
 
@@ -107,7 +107,7 @@ Inside `apps/assistant/`: one project per ring, then folders by kind and area. T
 | --- | --- | --- |
 | Data contract shared by all | `Assistant.Domain/Models/` | `ToolCall.cs` |
 | Interface (port) | `Assistant.Domain/Ports/` | `ILlmProvider.cs` |
-| Business rules of another area | its own service | `services/rental/src/Rental.Domain/` |
+| Business rules of another area | its own service | `services/housing/src/Housing.Domain/` |
 | Use case (pipeline step) | `Assistant.Application/` | `Pipeline.cs`, `AgentLoop.cs` |
 | Policy (rules) | `Assistant.Application/Policy/` | `AccessPolicy.cs`, `Guard.cs` |
 | Tool | `Assistant.Application/Tools/<Area>/` | `reminders.create` → `Tools/Reminders/CreateReminderTool.cs` |
@@ -127,16 +127,15 @@ Assistant.Bot ──► Assistant.Infrastructure ──► Assistant.Application
 
 Domain references nothing; nothing references `Assistant.Bot`. Inside `Assistant.Application` the order is checked in review: `Pipeline` → `AgentLoop | ContextBuilder | PostProcess | Router` → `Policy | Tools`.
 
-### Same rings in every app and service, and in the study app
+### Same rings in every app and service
 
-Every .NET app and service here, and the study app (its own repository), has the same rings: `<App>.Domain`, `<App>.Application`, `<App>.Infrastructure`, and an entry point (`<App>.Bot`, `<App>.Api` for HTTP and gRPC, `<App>.Web` for MVC), with `Program.cs` as the composition root. `services/market` (Python) maps them one to one to `domain/`, `application/`, `infrastructure/`, `entrypoints/` and `main.py`, checked by import-linter.
+Every .NET app and service here has the same rings: `<App>.Domain`, `<App>.Application`, `<App>.Infrastructure`, and an entry point (`<App>.Bot`, `<App>.Api` for HTTP and gRPC, `<App>.Web` for MVC), with `Program.cs` as the composition root. `services/market` (Python) maps them one to one to `domain/`, `application/`, `infrastructure/`, `entrypoints/` and `main.py`, checked by import-linter.
 
 - Tests mirror the source tree (`src/Assistant.Application/Policy/Guard.cs` ↔ `tests/Assistant.Application.Tests/Policy/GuardTests.cs`).
 - Same words and naming rules in both languages (§2–§5), each in its own casing: `TenantId`, `IsActive`, `AmountAud` ↔ `tenant_id`, `is_active`, `amount_aud`.
 - Where data crosses languages, one casing for everyone (§1): `snake_case` in `.proto` and the database, `camelCase` in edge JSON; the tools convert (generated gRPC code, an EF Core snake_case naming convention).
 - Same data rules: ids are UUIDs (`Guid`), times stored in UTC, every table has `id` and `created_at`, schema changes only through migrations (EF Core; Alembic in `market`), one database per service.
 - Same process: §11 commits, §13 branches and pull requests, a required `checks` CI job, the same `docs/` set (README, CHANGELOG, decisions, devlog, conventions, requirements, data dictionary, threat model, runbook).
-- When the study app repository is created, copy this file there and keep both copies in step.
 
 ## 10. Tests
 
@@ -150,7 +149,7 @@ Every .NET app and service here, and the study app (its own repository), has the
 [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <summary>`.
 
 - `summary`: imperative, lower case, no final period, ≤ 72 characters — "add reminder tool", not "Added reminder tool."
-- `scope` (optional): the ring or area touched — `domain`, `application`, `infrastructure`, `bot`, `policy`, `tools`, `config`, `docs`, or an area such as `rental`, `reminders`.
+- `scope` (optional): the ring or area touched — `domain`, `application`, `infrastructure`, `bot`, `policy`, `tools`, `config`, `docs`, or an area such as `housing`, `reminders`.
 
 | Type | Use for | Example |
 | --- | --- | --- |

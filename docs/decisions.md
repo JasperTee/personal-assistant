@@ -28,10 +28,10 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 | ADR-22 | Sentiment and panic as a separate market-state signal | Accepted | 2026-11-13 |
 | ADR-23 | Quantitative layer: statistics and ML on past data, agents interpret and challenge | Proposed | 2026-11-13 |
 | ADR-24 | Indicator trust that changes over time and by regime, earned from past results | Proposed | 2026-11-13 |
-| ADR-25 | Microservices split by business area: assistant, rental, market, finance | Accepted; reminders and to-dos moved by ADR-28, retention changed by ADR-27, identity and LLM rules changed by ADR-34 | 2026-11-18 |
+| ADR-25 | Microservices split by business area: assistant, rental, market, finance | Accepted; reminders and to-dos moved by ADR-28 and back by ADR-36, retention changed by ADR-27, identity and LLM rules changed by ADR-34, `rental` renamed `housing` by ADR-37 | 2026-11-18 |
 | ADR-26 | Monorepo with one folder per service under `services/` | Accepted; `assistant` moved to `apps/` by ADR-30, Python tooling replaced by ADR-33 | 2026-11-18 |
 | ADR-27 | Rental keeps readings and bills for 12 months, meter-book photos for 3 | Accepted | 2026-11-18 |
-| ADR-28 | The planner belongs to the study app (own repository, .NET); the assistant is its client | Accepted | 2026-11-18 |
+| ADR-28 | The planner belongs to the study app (own repository, .NET); the assistant is its client | Superseded by ADR-36 (no link to the study app) | 2026-11-18 |
 | ADR-29 | Telegram webhook in every environment, ready for several replicas | Superseded by ADR-31 | 2026-11-18 |
 | ADR-30 | Apps in `apps/`, business services in `services/` | Accepted | 2026-11-19 |
 | ADR-31 | Telegram stays on long polling; one owner, one process | Accepted | 2026-11-19 |
@@ -39,6 +39,10 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
 | ADR-33 | C# .NET is the main language; the code restarts from scratch | Accepted | 2026-11-27 |
 | ADR-34 | Service boundaries: data only through APIs, sensitive data away from AI | Accepted | 2026-11-27 |
 | ADR-35 | Personal scope, home server, architecture freeze | Accepted | 2026-11-27 |
+| ADR-36 | No link to the study app; the planner lives in `assistant` under the Life bot | Accepted; study deadlines moved to Life by ADR-37 | 2026-11-28 |
+| ADR-37 | Life owns everything with a date; `rental` is renamed `housing` | Accepted | 2026-11-28 |
+| ADR-38 | Research merges into Learning; a daily science digest | Accepted | 2026-11-28 |
+| ADR-39 | Email and Documents merge into Life; each specialist sends its own report at its own pace, only when there is news; one file store, summaries kept by each area | Accepted | 2026-11-28 |
 
 ---
 
@@ -467,3 +471,102 @@ Each decision: context → options → chosen → why → trade-offs. Never dele
   - **Architecture freeze:** no new structure decisions until (1) a bot answers a real Telegram message with Claude and (2) rent is billed once from start to finish. New ideas go to [ideas.md](ideas.md). Choices inside the design (a library, a table, a tool) are still made as they come.
 - **Why:** a clear scope stops design work that serves no real need; the home server costs nothing per month; the freeze turns effort into working features.
 - **Trade-offs:** the home server is a single point of failure (power, internet, disk), so backups and a restart plan in the runbook matter; ideas that need a structure change wait until the freeze ends.
+
+## ADR-36 — No link to the study app; the planner lives in `assistant` under the Life bot
+
+- **Context:** ADR-28 gave the planner (reminders, to-dos, calendar, study deadlines) to Huy's separate study app, and the assistant would call it. Huy decided the two projects stay completely apart: this project never depends on the study app. ADR-28 also left the bot without reminders until another product was built.
+- **Options:** (a) the planner is a module in `assistant`, owned by the Life bot; (b) a new `services/planner/`; (c) keep ADR-28.
+- **Chosen:** (a). This supersedes ADR-28.
+  - Reminders, to-dos and calendar (LIFE-01 to LIFE-03) and study deadlines (EDU-01, 02) are tools inside `assistant`, with their tables in the assistant's own database. The Life bot owns reminders, to-dos and calendar; the Learning bot owns study deadlines.
+  - It stays a module, not a service, by ADR-25's rule: no other client needs this data, so there is no reason for it to stand alone.
+  - No `user_id` for many users, no OAuth into another app, no shared `.proto`: one owner (ADR-35).
+  - Nothing in this repository refers to the study app any more. The study app may copy these conventions, but this repository does not keep them in step.
+  - **Architecture freeze (ADR-35):** this removes an integration instead of adding one, so it is allowed during the freeze.
+- **Why:** the project builds and runs alone; reminders no longer wait for another product; less to build (no cross-repository contract, no sign-in between apps).
+- **Trade-offs:** if the study app later needs the same planner data, the two hold separate copies, and that is accepted. The "C# bot calls a .NET service in another repository" integration is no longer shown here; `rental` and `finance` over gRPC still show it inside the monorepo.
+
+## ADR-37 — Life owns everything with a date; `rental` is renamed `housing`
+
+- **Context:**
+  - Daily-life work was split across bots: reminders and calendar in Life, study deadlines and study schedule in Learning (ADR-36). Huy thinks of all of it as "my life": one place for what is due and when.
+  - Huy wants the area named by what it is about, housing, rather than by one activity.
+- **Options for Life:**
+  - (a) Life takes everything about learning as well;
+  - (b) Life takes everything that has a date or a to-do, and Learning keeps the teaching;
+  - (c) keep ADR-36.
+- **Chosen:** (b), and the rename.
+  - **Life** owns reminders, to-dos, calendar, study deadlines and study schedule (EDU-01, 02 become LIFE-05, 06), and workouts. One `deadlines` list for every kind of deadline.
+  - **Learning** keeps the teaching and career work: explaining lectures, PTE practice, flashcards, internship applications (EDU-03 to 05, CAR-*). Its own deadlines go to Life through the Secretary.
+  - **`rental` becomes `housing`:** the service (`services/housing`), the bot and persona (`housing`), the tools (`housing.*`), the token (`TELEGRAM_TOKEN_HOUSING`) and the future website (`housing-web`).
+    - It covers the rooms Huy rents out. RENT-01 to RENT-10 keep their IDs, so older ADRs still point to them.
+    - The rent Huy pays for his own room, and his household bills, are only expense categories in `finance` (FIN-01). Housing holds no data about Huy's own home, so his own payments never mix with rent income or with the tenants' data.
+  - The ID-card endpoint of ADR-34 is now a `housing` endpoint; the rule does not change.
+  - **Architecture freeze (ADR-35):** no new ring, service or integration, only names and which bot holds which tools. That is allowed during the freeze.
+  - Older ADRs keep the word `rental` as history.
+- **Why:**
+  - One bot answers "what's due this week?", whatever the deadline is about.
+  - Learning's tool list stays short and its prompt stays a teacher's (ADR-32). Option (a) would give Life a long tool list and two jobs.
+  - `housing` names the area by what it covers, not by one activity inside it.
+- **Trade-offs:**
+  - Life's tool list grows: about 6 groups. If tool choice gets worse, split it again.
+  - A rename across docs and config now; cheap because the C# code for `housing` does not exist yet.
+
+## ADR-38 — Research merges into Learning; a daily science digest
+
+- **Context:** the Research bot (Scientist) explained papers and scientific terms, learned new topics and sent new papers weekly. The Learning bot explains lectures and runs PTE practice. Both do the same job: help Huy understand and learn. Huy also wants science updates every day, not only every week.
+- **Options:**
+  - (a) keep two bots;
+  - (b) merge Research into Learning;
+  - (c) merge both into Life.
+- **Chosen:** (b).
+  - The **Learning** bot covers study, science and career: lectures, PTE, flashcards, scientific papers and terms, new topics, notes, and internship applications. SCI-01 to 05 keep their IDs.
+  - It takes Research's tools: `papers.*`, `web.search`, `notes.save` and `research.subagent`.
+  - **SCI-06, new:** a morning science newspaper: what the world discovered or invented, written for a general reader like a news page, not a list of papers.
+    - At most 5 stories a day, each a headline, 2–3 plain sentences and its source.
+    - Under each story the bot offers Telegram buttons: summarise it, explain the science, go deeper. Huy picks one, and the bot answers in the same chat.
+    - It is a scheduled run (ADR-15): read the sources, pick, check, drop what was already sent, then send.
+    - The weekly papers (SCI-04) stay.
+  - The `research` persona, prompt and Telegram token are removed.
+  - **Architecture freeze (ADR-35):** this removes a bot instead of adding one, so it is allowed during the freeze.
+- **Why:** one bot for "explain this to me", whether the question comes from a lecture or a paper; one notes store for both; one bot fewer to run. Option (c) would mix a teacher's job into the life manager (ADR-37).
+- **Trade-offs:**
+  - Learning's tool list grows to about 8 groups. If tool choice gets worse, use tool search (`docs/ideas.md`) or split it again.
+  - The daily digest costs about 7 times as much as the weekly one. The 5-item cap and a cheap model for picking keep it small; `run_logs` shows the real cost.
+
+## ADR-39 — Email and Documents merge into Life; each specialist sends its own report at its own pace, only when there is news; one file store, summaries kept by each area
+
+- **Context:**
+  - Mail and files are part of Huy's daily life, and mail often holds the dates Life already tracks.
+  - Huy wants each specialist to report on its own area, at the pace of that area, not one combined brief from the Secretary. Areas that change slowly, like housing, report once a month, and no bot sends a report with nothing in it.
+  - Huy wants one place that keeps every document, while each area still owns what the documents mean. For example, Learning summarises lectures and keeps those summaries itself.
+- **Chosen:**
+  - **Life takes Email and Documents.** MAIL-01 to 04 and DOC-01 to 05 keep their IDs. The `email` and `documents` personas, prompts and tokens are removed.
+    - Sending mail stays EXTERNAL: every mail waits for Huy's approval (ADR-06).
+    - Mail content is data, not instructions (threat model T-01).
+  - **Reports, one per specialist:**
+    - Each specialist sends its own report in its own chat, on the schedule set in its persona (`report.every`, `report.at`).
+    - **Nothing to report, nothing sent:** a report with no items is skipped, never sent as "nothing new".
+    - Each report is a scheduled run (ADR-15), so nothing is missed or sent twice.
+    - Each report can be turned off on its own.
+    - Something urgent (a lease about to expire, a budget overrun, a big market move) is still sent when it happens, as an alert, without waiting for the report.
+    - Pace and contents:
+      - **Life, daily:** today's plan, reminders, deadlines, important mail.
+      - **Learning, daily:** the morning science newspaper (SCI-06) and what is due to study.
+      - **Market, every trading day:** the market report (MKT-01).
+      - **Housing, monthly:** rent collected and still owed, leases expiring next month, open repairs.
+      - **Finance, monthly:** last month's spending against budget and cash flow (FIN-04).
+    - The Secretary's combined morning brief (SEC-05) is dropped, and the Secretary sends nothing on a schedule.
+  - **One file store, summaries by area:**
+    - Life keeps one store for every file Huy sends (DOC-01): the original file once, plus its type, its area tag and the course or topic.
+    - The specialist of that area reads the file, summarises it and keeps the summary in its own tables. For example, Learning writes lecture summaries per course to `learning_notes`.
+    - Other bots find files through read-only `docs.search` and `docs.ask` (ADR-32).
+  - **Exception:** housing files (meter photos, invoices, leases, ID cards) stay in the `housing` service and never enter the shared store (ADR-34). Identity, visa and bank documents in the store keep only their metadata; their content never goes to the LLM.
+  - **Architecture freeze (ADR-35):** this removes two bots and a combined brief; the store and the summary tables are tables inside `assistant`. That is allowed during the freeze.
+- **Why:**
+  - Mail, files and dates sit with one bot.
+  - Each report comes from the bot that knows the area, so Huy can reply to it in the same chat. A pace per area and no empty reports keep the messages few and worth reading.
+  - A file is stored once, but its summary lives where it is used.
+- **Trade-offs:**
+  - Life's tool list grows to about 9 groups. If tool choice gets worse, use tool search (`docs/ideas.md`) or split Email out again.
+  - Up to 3 messages on a normal morning and 2 more at the start of the month, instead of one brief; each report can be turned off. A skipped report could hide a bot that stopped working, so `run_logs` records every report run, sent or skipped.
+  - A summary can go stale if the file is replaced, so every summary keeps its `document_id`.

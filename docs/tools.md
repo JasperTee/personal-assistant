@@ -77,20 +77,17 @@ Write the spec before coding each tool. The code (tool name, description and inp
 - **Description:** Ask a specialist bot to do a task in its area and return the result.
 - **RiskLevel:** READ (the call itself); the specialist's actions still go through its own Policy
 - **Persona:** secretary only
-- **Parameters:** `persona` — enum (life, rental, finance, market; more as specialists are added); `task` — string — what to do and the desired output format
+- **Parameters:** `persona` — enum (life, housing, finance, market; more as specialists are added); `task` — string — what to do and the desired output format
 
 ## Personas
 
-The actual config lives in `apps/assistant/config/personas/`. Two tiers (ADR-32): the Secretary only routes; each specialist holds its area's tools and is its own Telegram bot. Write tools act only on the specialist's own service; read-only tools on other services are allowed.
+The actual config lives in `apps/assistant/config/personas/`. Reports (ADR-39): each persona's `report` sets its pace (`every`: daily, trading_days, monthly); a report with nothing in it is not sent, and urgent alerts do not wait for the report. Two tiers (ADR-32): the Secretary only routes; each specialist holds its area's tools and is its own Telegram bot. Write tools act only on the specialist's own service; read-only tools on other services are allowed.
 
 | Persona | Status | Tools | Proactive |
 | --- | --- | --- | --- |
-| secretary | On (MVP) | ask_specialist only | Morning brief (gathered from specialists) |
-| life | On (MVP) | reminders.*, tasks.list, calendar.* (the planner is in the study app, ADR-28) | Reminders |
-| rental | On (MVP) | rental.read_meter_photo, rental.confirm_readings, rental.calculate_bills, rental.render_invoice, tenants.*; later: contracts.*, rooms.*, rental.draft_tenant_message | Rent-day reminders, leases about to expire |
-| finance | Off (Should) | expenses.*, receipts.read_photo, budgets.*, finance.report; read-only: rental income | Budget alerts, weekly report |
-| email | Off (Should) | email.* (Gmail + Outlook) | Important mail |
-| documents | Off (Should) | docs.ingest, docs.search, docs.ask, docs.organize | Documents about to expire |
-| learning | Off (Should) | deadlines.*, study.plan, docs.search, docs.ask, applications.* | Deadline reminders, application follow-ups |
-| market | Off (Could) | market.* | Big-move alerts, daily report |
-| research | Off (Could) | papers.*, web.search, notes.save, research.subagent | New papers weekly |
+| secretary | On (MVP) | ask_specialist only | None (each specialist sends its own report, ADR-39) |
+| life | On (MVP) | reminders.*, tasks.list, calendar.*, deadlines.*, study.plan, email.* (Gmail + Outlook), docs.ingest, docs.search, docs.ask, docs.organize; later: workouts.* (ADR-36, ADR-37, ADR-39) | Daily report, reminders, deadline reminders, important mail, documents about to expire |
+| housing | On (MVP) | housing.read_meter_photo, housing.confirm_readings, housing.calculate_bills, housing.render_invoice, tenants.*; later: contracts.*, rooms.*, housing.draft_tenant_message | Monthly report, rent-day reminders, leases about to expire |
+| finance | Off (Should) | expenses.*, receipts.read_photo, budgets.*, finance.report, shifts.*, pay.calculate, payslips.read_photo, tax.estimate; read-only: rental income from `housing` | Monthly report, budget alerts |
+| learning | Off (Should) | docs.search, docs.ask (read-only, Life's file store), notes.save (summaries per course), applications.*, papers.*, web.search, research.subagent; later: pte.practice, flashcards.* (deadlines are Life's, ADR-37; science from Research, ADR-38) | Daily report (science newspaper), application follow-ups, new papers weekly |
+| market | Off (Could) | market.* | Report every trading day, big-move alerts |
