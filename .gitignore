@@ -4,6 +4,9 @@
 credentials*.json
 token*.json
 
+# Personal pay rates (FIN-10): keep only the example in Git
+services/finance/config/pay.yaml
+
 # Local data (one data/ folder per app or service)
 apps/*/data/*
 !apps/*/data/.gitkeep

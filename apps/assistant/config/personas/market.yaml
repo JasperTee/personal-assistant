@@ -11,6 +11,10 @@ tools:
   - market.news
   - market.report_search
 proactive:
+  report:                 # REPORT-03: market report (MKT-01)
+    every: trading_days
+    at: "07:00"
+    skip_if_empty: true
   alerts: true
   threshold_percent: 3     # example — tune once there is real data
   cooldown_hours: 24

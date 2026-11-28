@@ -11,9 +11,17 @@ tools:
   - receipts.read_photo
   - budgets.*
   - finance.report
+  - shifts.*             # FIN-09, 13, 14: log shifts (bank up to the cap, cash over it), pay not yet received, hours per week/fortnight
+  - pay.calculate        # FIN-10: rates only from pay.yaml
+  - payslips.read_photo  # FIN-11: check against logged shifts; TFN masked, never stored
+  - tax.estimate         # FIN-12: rates only from tax_rates.yaml; reference only
 proactive:
+  report:                 # REPORT-05: last month's spending against budget, cash flow (FIN-04)
+    every: monthly
+    day: 1
+    at: "08:00"
+    skip_if_empty: true
   budget_alerts: true
-  weekly_report: true
 memory:
   history: own
   facts: shared

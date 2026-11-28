@@ -47,7 +47,7 @@ Kept for 12 months (settings.yaml); older messages are summarised, then deleted.
 
 ## reminders — phase 3 · Shared
 
-> Planned to move to the study app's planner (ADR-28); kept here until that design is written.
+> Owned by the Life bot, in the assistant's database (ADR-36).
 
 | Column | Type | Meaning |
 | --- | --- | --- |
@@ -64,6 +64,49 @@ Kept for 12 months (settings.yaml); older messages are summarised, then deleted.
 | category | string | Category |
 | note | text, nullable | Note |
 | spent_on | date | Date spent |
+
+## work_shifts — phase 3 · Finance
+
+One row per shift at Huy's one job (FIN-09).
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| worked_on | date | Day of the shift |
+| started_at, ended_at | datetime | Start and end (stored in UTC, shown in Sydney time) |
+| break_minutes | int | Unpaid break |
+| pay_aud | decimal(10,2) | Total of the shift's pay lines |
+
+## pay_lines — phase 3 · Finance
+
+The pieces of a shift's pay (FIN-10). A shift has one line per payment method and day type it touches: 5pm–10pm with the evening rate from 7pm gives two lines, and a shift that crosses the bank hours cap gives bank lines and cash lines.
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| shift_id | FK work_shifts | The shift |
+| paid_by | enum: bank, cash | Bank up to the cap, cash over it; decided by code, not by Huy |
+| day_type | enum: weekday, evening, saturday, sunday, public_holiday | Which rate applies |
+| hours | decimal(5,2) | Paid hours in this line |
+| rate_aud | decimal(10,2) | Hourly rate used, copied from `pay.yaml` at the time, so later rate changes don't rewrite old shifts |
+| pay_aud | decimal(10,2) | hours × rate |
+| expected_paid_on | date | When the pay should arrive, from the method's delay in `pay.yaml` (FIN-13) |
+| received_on | date, nullable | When it actually arrived; null while not yet received |
+| payslip_id | FK payslips, nullable | Bank lines only: the payslip that covered it |
+
+## payslips — phase 3 · Finance
+
+One row per payslip (FIN-11). The photo lives in Life's file store; the TFN is never stored.
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| document_id | FK documents | The payslip photo or PDF |
+| period_start_on, period_end_on | date | Pay period |
+| hours | decimal(6,2) | Hours on the payslip |
+| gross_aud | decimal(10,2) | Gross pay |
+| tax_withheld_aud | decimal(10,2) | PAYG tax withheld |
+| super_aud | decimal(10,2) | Superannuation |
+| net_aud | decimal(10,2) | Paid into the bank |
+| confirmed | bool | False until Huy confirms the numbers read from the photo |
+| gap_note | text, nullable | What did not match the logged bank lines |
 
 ## pending_actions — phase 4 · Shared
 
@@ -92,12 +135,29 @@ Kept for 12 months (settings.yaml); older messages are summarised, then deleted.
 | summary | text | One-line summary |
 | is_read_by_secretary | bool | Already included in the brief? |
 
-## learning_notes — phase 5b · Shared
+## documents — phase 4 · Life (ADR-39)
+
+One row per file Huy sends. The original file is stored once; housing files never come here (ADR-34).
 
 | Column | Type | Meaning |
 | --- | --- | --- |
+| file_path | string | Where the original file is stored |
+| kind | enum: lecture, paper, mail_attachment, receipt, identity, visa, bank, other | Type of file |
+| area | string | Bot that owns its meaning: life, learning, finance… |
+| topic | string, nullable | Course or topic, e.g. "COMP3000" |
+| is_sensitive | bool | Identity, visa, bank: metadata only, content never sent to the LLM |
+| expires_on | date, nullable | For documents that expire |
+
+## learning_notes — phase 5b · Learning
+
+Summaries of lectures, papers and articles, kept by the Learning bot (ADR-38, ADR-39).
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| document_id | FK documents, nullable | The file it summarises; null for a web article |
+| course | string, nullable | Course, for lectures |
 | topic | string | Topic |
-| source_url | string | Article link |
+| source_url | string, nullable | Article link |
 | summary | text | Summary |
 
 ## alerts_sent — phase 6 · Shared

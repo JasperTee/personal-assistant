@@ -1,0 +1,42 @@
+# MVP — on, together with the Secretary (ADR-32)
+# everything with a date, plus mail and the file store (ADR-37, ADR-39)
+id: life
+name: Life
+is_enabled: true
+telegram_token_env: TELEGRAM_TOKEN_LIFE
+prompt_files:
+  - prompts/rules.md
+  - prompts/life.md
+tools:
+  # the planner lives in assistant (ADR-36); tools are turned on as they are built
+  # - reminders.create  # priority: Must
+  # - reminders.list    # priority: Must
+  # - tasks.list        # priority: Must
+  # - calendar.*        # priority: Should
+  # - deadlines.*       # study and other deadlines (ADR-37); priority: Should
+  # - study.plan        # break big tasks into small ones, schedule them; priority: Should
+  # - email.list        # Gmail + Outlook behind one interface; priority: Should
+  # - email.read
+  # - email.summarize
+  # - email.label
+  # - email.draft
+  # - email.send        # EXTERNAL — awaits approval
+  # - docs.ingest       # the one file store: read, classify, tag, store; priority: Should
+  # - docs.search       # find by asking (RAG)
+  # - docs.ask          # Q&A over one document
+  # - docs.organize
+  # - workouts.*        # priority: Could
+proactive:
+  report:                   # REPORT-01: today's plan, reminders, deadlines, important mail
+    every: daily
+    at: "07:00"
+    skip_if_empty: true
+  reminders: false          # turned on with reminders.*
+  important_mail_alert: false
+  expiry_alerts: false      # documents about to expire
+memory:
+  history: own
+  facts: shared
+sensitive:
+  # identity documents: stored encrypted, only metadata read (type, expiry date), content never sent to the LLM
+  categories: [identity, visa, bank]

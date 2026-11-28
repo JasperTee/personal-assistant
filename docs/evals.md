@@ -15,7 +15,7 @@ Each solution has one test project per ring (`tests/<App>.<Ring>.Tests`) that mi
 | Assistant.Application.Tests/Policy/GuardTests.cs | External actions await approval; Forbidden rejected; bad values blocked | 3 |
 | Assistant.Application.Tests/Tools/Reminders/CreateReminderToolTests.cs | A past `RemindAt` → `IsError` + the rule as hint | 3 |
 | Assistant.Application.Tests/AgentLoopTests.cs | Stops when out of iterations; a predictable tool error returns a hint, an unexpected one doesn't crash the loop; missing parameters → ask back | 2–3 |
-| services/rental: Rental.Domain.Tests/BillingTests.cs | Readings × unit prices → the right bill for every room | MVP |
+| services/housing: Housing.Domain.Tests/BillingTests.cs | Readings × unit prices → the right bill for every room | MVP |
 
 Run before every commit with `dotnet test`, after `dotnet format --verify-no-changes` and `dotnet build`.
 

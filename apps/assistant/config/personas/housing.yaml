@@ -1,0 +1,30 @@
+# MVP — on, together with the Secretary
+id: housing
+name: Housing
+is_enabled: true
+telegram_token_env: TELEGRAM_TOKEN_HOUSING
+prompt_files:
+  - prompts/rules.md
+  - prompts/housing.md
+tools:
+  - housing.read_meter_photo    # handwritten photo -> table of numbers, uncertain cells flagged
+  - housing.confirm_readings    # Huy confirms / corrects
+  - housing.calculate_bills
+  - housing.render_invoice      # PDF / PNG -> data/invoices/<year-month>/<block>/
+  - tenants.*
+  # - contracts.*               # priority: Should
+  # - rooms.check_in / check_out
+  # - housing.payment_status
+  # - housing.draft_tenant_message  # priority: Could — drafts only, Huy sends them
+# retention clean-up (ADR-27): a scheduled job in the housing service, in plain code — not an LLM tool
+proactive:
+  report:                      # REPORT-04: rent collected and owed, leases expiring next month, repairs
+    every: monthly
+    day: 1
+    at: "08:00"
+    skip_if_empty: true
+  rent_due_reminder: false      # priority: Should
+  contract_expiry_alert: false  # priority: Should
+memory:
+  history: own
+  facts: shared

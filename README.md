@@ -1,6 +1,6 @@
 # Personal Assistant Agent
 
-A personal AI assistant that talks over Telegram. A **Secretary** bot routes each request to specialist bots (life, rental, finance, market, …) that hold the tools; Huy can also talk to each specialist directly. The bots share one app (`apps/assistant`); each business area is its own service with its own database. Being rebuilt in C# .NET (ADR-33).
+A personal AI assistant that talks over Telegram. A **Secretary** bot routes each request to specialist bots (life, housing, finance, market, …) that hold the tools; Huy can also talk to each specialist directly. The bots share one app (`apps/assistant`); each business area is its own service with its own database. Being rebuilt in C# .NET (ADR-33).
 
 - Design document (architecture, pipeline, roadmap; in Vietnamese): [AI Agent design process](https://claude.ai/artifact/6PJohVCM9wezexxfhSLyz3)
 - Detailed docs: [`docs/`](docs/README.md)
@@ -30,7 +30,7 @@ Assistant.Domain          data contracts, ports, business rules — references n
 
 ## Folder structure
 
-Monorepo of apps and services (ADR-26, ADR-30, ADR-34). `apps/` holds what people use (the Telegram bots, later `rental-web`); `services/` holds the business areas the apps call over gRPC. Each one has its own solution (or `pyproject.toml` for `market`), code, tests and config, and builds alone. Apps call services; services never call apps.
+Monorepo of apps and services (ADR-26, ADR-30, ADR-34). `apps/` holds what people use (the Telegram bots, later `housing-web`); `services/` holds the business areas the apps call over gRPC. Each one has its own solution (or `pyproject.toml` for `market`), code, tests and config, and builds alone. Apps call services; services never call apps.
 
 ```text
 personal-assistant/
@@ -46,7 +46,7 @@ personal-assistant/
 │       └── tests/                 # one test project per ring, mirrors src/
 ├── services/                      # business areas; never call apps
 │   └── market/                    # Python (ADR-33): market data, evidence, forecasts
-│                                  # rental/ and finance/ return as .NET solutions
+│                                  # housing/ and finance/ return as .NET solutions
 ├── docs/                          # docs that live with the code
 ├── Directory.Build.props          # build settings shared by every .NET project
 ├── global.json                    # the .NET SDK version

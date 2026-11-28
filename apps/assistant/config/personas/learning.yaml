@@ -1,22 +1,31 @@
 # priority: Should — off
+# study, science and career; the Research bot merged in here (ADR-38)
 id: learning
-name: Learning & Career
+name: Learning
 is_enabled: false
 telegram_token_env: TELEGRAM_TOKEN_LEARNING
 prompt_files:
   - prompts/rules.md
   - prompts/learning.md
 tools:
-  - deadlines.*          # assignments, exams, applications
-  - study.plan           # break big tasks into small ones, schedule them
-  - docs.search          # shared with the Documents bot (lectures)
+  # deadlines.* and study.plan belong to the Life bot (ADR-37)
+  - docs.search          # read-only, Life's file store (ADR-39)
   - docs.ask
   - applications.*       # track internship applications
+  - papers.fetch         # scientific papers (from Research, ADR-38)
+  - papers.search
+  - web.search
+  - notes.save           # summaries per course and topic -> learning_notes (DOC-06)
+  - research.subagent    # broad questions; returns only a sourced summary
   # - pte.practice       # priority: Could
   # - flashcards.*       # priority: Could
 proactive:
-  deadline_reminders: true
   application_follow_up: true
+  report:                      # REPORT-02: morning science newspaper (SCI-06) + what is due to study
+    every: daily
+    at: "07:00"
+    skip_if_empty: true
+  weekly_papers: true          # SCI-04
 memory:
   history: own
   facts: shared
